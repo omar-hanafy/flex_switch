@@ -25,7 +25,7 @@ platforms:
   windows:
 
 screenshots:
-  - description: 'Preview'
+  - description: 'Segmented control preview (light and dark themes).'
     path: screenshots/1.png
 
 environment:
