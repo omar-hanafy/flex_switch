@@ -123,5 +123,5 @@ const style = FlexSwitchStyle(
 ## Example app
 See `example/` for a runnable demo showing boolean, enum, and custom values with theming.
 
-License
+## License
 MIT — see LICENSE.
