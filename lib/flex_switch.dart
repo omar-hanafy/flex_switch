@@ -9,6 +9,6 @@
 ///   falseLabel: 'Off',
 /// );
 /// ```
-library flex_switch;
+library;
 
 export 'src/flex_switch.dart';
