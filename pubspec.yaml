@@ -1,0 +1,46 @@
+name: flex_switch
+description: >
+  A multi-option segmented control for Flutter.
+  Keyboard accessible, RTL-aware, drag-to-select, themable, and fast.
+version: 1.0.0
+
+homepage: https://github.com/omar-hanafy/flex_switch
+repository: https://github.com/omar-hanafy/flex_switch
+issue_tracker: https://github.com/omar-hanafy/flex_switch/issues
+documentation: https://github.com/omar-hanafy/flex_switch#readme
+
+topics:
+  - segmented-control
+  - switch
+  - toggle
+  - cupertino
+  - ios
+
+platforms:
+  android:
+  ios:
+  web:
+  linux:
+  macos:
+  windows:
+
+screenshots:
+  - description: 'Preview'
+    path: screenshots/1.png
+
+environment:
+  sdk: ^3.2.0
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  equatable: ^2.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^9.0.0
+
+flutter:
+  uses-material-design: true
