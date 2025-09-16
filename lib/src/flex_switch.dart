@@ -31,6 +31,7 @@ class SwitchOption<T> extends Equatable {
     this.textStyle,
     this.semanticsLabel,
     this.tooltip,
+    this.enabled = true,
   });
 
   /// The underlying value for this option.
@@ -62,6 +63,10 @@ class SwitchOption<T> extends Equatable {
   /// Optional tooltip shown on long press or mouse hover.
   final String? tooltip;
 
+  /// If false, this option is visually dimmed and cannot be selected by user
+  /// interaction (but can still be selected programmatically).
+  final bool enabled;
+
   @override
   List<Object?> get props => [value];
 }
@@ -79,6 +84,7 @@ class FlexSwitchStyle {
     this.inactiveLabelColor,
     this.borderRadius = 16.0,
     this.thumbRadius = 12.0,
+    this.thumbPressScale = 0.95,
     this.padding = 5.0,
     this.itemPadding = const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
     this.gap = 8.0,
@@ -91,6 +97,9 @@ class FlexSwitchStyle {
     this.showDividers = false,
     this.dividerColor,
     this.dividerThickness = 1.0,
+    this.hideDividersAdjacentToThumb = true,
+    this.dividerFadeDuration,
+    this.dividerFadeCurve,
     this.focusRingWidth = 2.0,
     this.enableRipple = false,
     this.segmentOverlayColor,
@@ -120,6 +129,10 @@ class FlexSwitchStyle {
 
   /// Rounding applied to the moving thumb.
   final double thumbRadius;
+
+  /// Scale applied to the thumb while pressed (pinned-edge transform keeps the
+  /// touching edge fixed). Set to 1.0 to disable.
+  final double thumbPressScale;
 
   /// Padding inside the outer track (applies to all sides).
   final double padding;
@@ -159,6 +172,14 @@ class FlexSwitchStyle {
   /// Thickness of the vertical dividers in logical pixels.
   final double dividerThickness;
 
+  /// When [showDividers] is true: fade dividers that touch the highlighted/selected
+  /// segment, matching Cupertino's behavior.
+  final bool hideDividersAdjacentToThumb;
+
+  /// Optional override for divider fade duration/curve. Falls back to [duration]/[curve].
+  final Duration? dividerFadeDuration;
+  final Curve? dividerFadeCurve;
+
   /// Focus ring width for keyboard focus.
   final double focusRingWidth;
 
@@ -186,6 +207,7 @@ class FlexSwitchStyle {
     Color? inactiveLabelColor,
     double? borderRadius,
     double? thumbRadius,
+    double? thumbPressScale,
     double? padding,
     EdgeInsets? itemPadding,
     double? gap,
@@ -198,6 +220,9 @@ class FlexSwitchStyle {
     bool? showDividers,
     Color? dividerColor,
     double? dividerThickness,
+    bool? hideDividersAdjacentToThumb,
+    Duration? dividerFadeDuration,
+    Curve? dividerFadeCurve,
     double? focusRingWidth,
     bool? enableRipple,
     WidgetStateProperty<Color?>? segmentOverlayColor,
@@ -212,6 +237,7 @@ class FlexSwitchStyle {
       inactiveLabelColor: inactiveLabelColor ?? this.inactiveLabelColor,
       borderRadius: borderRadius ?? this.borderRadius,
       thumbRadius: thumbRadius ?? this.thumbRadius,
+      thumbPressScale: thumbPressScale ?? this.thumbPressScale,
       padding: padding ?? this.padding,
       itemPadding: itemPadding ?? this.itemPadding,
       gap: gap ?? this.gap,
@@ -224,6 +250,10 @@ class FlexSwitchStyle {
       showDividers: showDividers ?? this.showDividers,
       dividerColor: dividerColor ?? this.dividerColor,
       dividerThickness: dividerThickness ?? this.dividerThickness,
+      hideDividersAdjacentToThumb:
+          hideDividersAdjacentToThumb ?? this.hideDividersAdjacentToThumb,
+      dividerFadeDuration: dividerFadeDuration ?? this.dividerFadeDuration,
+      dividerFadeCurve: dividerFadeCurve ?? this.dividerFadeCurve,
       focusRingWidth: focusRingWidth ?? this.focusRingWidth,
       enableRipple: enableRipple ?? this.enableRipple,
       segmentOverlayColor: segmentOverlayColor ?? this.segmentOverlayColor,
@@ -241,7 +271,14 @@ class FlexSwitchStyle {
 enum FlexSwitchLayout {
   /// All segments share equal width.
   equal,
+
+  /// Each segment gets width proportional to its intrinsic content (icon + text),
+  /// scaled to fit the available space.
+  proportional,
 }
+
+/// Drag commit behavior: apply selection immediately while dragging, or only on release.
+enum DragCommitBehavior { immediate, onRelease }
 
 /// Universal, multi-option segmented control.
 ///
@@ -267,6 +304,8 @@ class FlexSwitch<T> extends StatefulWidget {
     this.hapticFeedback = true,
     this.layout = FlexSwitchLayout.equal,
     this.allowDrag = true,
+    this.dragCommitBehavior,
+    this.thumbDragOnly = false,
     this.semanticsLabel,
     this.semanticValueBuilder,
   }) : assert(options.length >= 2, 'FlexSwitch requires at least two options');
@@ -287,6 +326,10 @@ class FlexSwitch<T> extends StatefulWidget {
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
+    FlexSwitchLayout layout = FlexSwitchLayout.equal,
+    bool allowDrag = true,
+    DragCommitBehavior? dragCommitBehavior,
+    bool thumbDragOnly = false,
   }) {
     return FlexSwitch<bool>(
       key: key,
@@ -296,6 +339,10 @@ class FlexSwitch<T> extends StatefulWidget {
       height: height,
       disabled: disabled,
       hapticFeedback: hapticFeedback,
+      layout: layout,
+      allowDrag: allowDrag,
+      dragCommitBehavior: dragCommitBehavior,
+      thumbDragOnly: thumbDragOnly,
       options: [
         SwitchOption<bool>(value: false, label: falseLabel, icon: falseIcon),
         SwitchOption<bool>(value: true, label: trueLabel, icon: trueIcon),
@@ -320,6 +367,10 @@ class FlexSwitch<T> extends StatefulWidget {
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
+    FlexSwitchLayout layout = FlexSwitchLayout.equal,
+    bool allowDrag = true,
+    DragCommitBehavior? dragCommitBehavior,
+    bool thumbDragOnly = false,
   }) {
     return FlexSwitch<E>(
       key: key,
@@ -329,6 +380,10 @@ class FlexSwitch<T> extends StatefulWidget {
       height: height,
       disabled: disabled,
       hapticFeedback: hapticFeedback,
+      layout: layout,
+      allowDrag: allowDrag,
+      dragCommitBehavior: dragCommitBehavior,
+      thumbDragOnly: thumbDragOnly,
       options: values
           .map(
             (e) => SwitchOption<E>(
@@ -358,6 +413,10 @@ class FlexSwitch<T> extends StatefulWidget {
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
+    FlexSwitchLayout layout = FlexSwitchLayout.equal,
+    bool allowDrag = true,
+    DragCommitBehavior? dragCommitBehavior,
+    bool thumbDragOnly = false,
   }) {
     return FlexSwitch<V>(
       key: key,
@@ -367,6 +426,10 @@ class FlexSwitch<T> extends StatefulWidget {
       height: height,
       disabled: disabled,
       hapticFeedback: hapticFeedback,
+      layout: layout,
+      allowDrag: allowDrag,
+      dragCommitBehavior: dragCommitBehavior,
+      thumbDragOnly: thumbDragOnly,
       options: values
           .map(
             (v) => SwitchOption<V>(
@@ -407,6 +470,15 @@ class FlexSwitch<T> extends StatefulWidget {
   /// If true, horizontal drag over the control changes selection.
   final bool allowDrag;
 
+  /// Whether selection should be committed immediately while dragging, or only on release.
+  /// If null, defaults to [DragCommitBehavior.onRelease] when [thumbDragOnly] is true,
+  /// otherwise [DragCommitBehavior.immediate].
+  final DragCommitBehavior? dragCommitBehavior;
+
+  /// If true, drags are only accepted when they start on the currently selected
+  /// segment (thumb). Otherwise any horizontal drag over the control is accepted.
+  final bool thumbDragOnly;
+
   /// Optional semantic label for the whole control (e.g. "Theme mode").
   final String? semanticsLabel;
 
@@ -425,8 +497,13 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
 
   // Drag state
   bool _dragging = false;
+  int? _highlightedIndex; // Preview index when commit-on-release is active
+  static const double _kTouchYDistanceThreshold = 50; // logical px guard
+  bool _dragAccepted = false;
 
   // Per-segment interaction state no longer tracked; Material handles ink.
+  final Set<int> _pressed = <int>{};
+  bool _thumbPressed = false;
 
   int get _selectedIndex => math.max(
         0,
@@ -473,6 +550,43 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
     return index;
   }
 
+  /// Resolve index for variable width segments (LTR physical order), then map to logical index.
+  int _indexFromDxVariable({
+    required double dx,
+    required double trackWidth,
+    required double padding,
+    required List<double> segmentWidths, // physical LTR order
+  }) {
+    final clamped = dx.clamp(padding, trackWidth - padding);
+    double cursor = padding;
+    int physicalIndex = 0;
+    for (; physicalIndex < segmentWidths.length; physicalIndex++) {
+      final end = cursor + segmentWidths[physicalIndex];
+      if (clamped <= end) break;
+      cursor = end;
+    }
+    physicalIndex = physicalIndex.clamp(0, segmentWidths.length - 1);
+    final dir = Directionality.of(context);
+    return dir == TextDirection.rtl
+        ? (segmentWidths.length - 1 - physicalIndex)
+        : physicalIndex;
+  }
+
+  bool _isEnabledIndex(int i) => widget.options[i].enabled;
+
+  /// Pick the nearest enabled index to [i]. Prefers right, then left at equal distance.
+  int _nearestEnabledIndex(int i) {
+    if (_isEnabledIndex(i)) return i;
+    final last = widget.options.length - 1;
+    for (int d = 1; d <= last; d++) {
+      final r = i + d;
+      if (r <= last && _isEnabledIndex(r)) return r;
+      final l = i - d;
+      if (l >= 0 && _isEnabledIndex(l)) return l;
+    }
+    return i; // fallback (shouldn't happen if at least one enabled)
+  }
+
   Color _resolveActiveLabelColor(SwitchOption<T> o, ThemeData theme) =>
       o.activeColor ??
       widget.style.activeLabelColor ??
@@ -509,6 +623,11 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
     final theme = Theme.of(context);
     final height = widget.height ?? _computeDefaultHeight(theme);
     final style = widget.style;
+    final DragCommitBehavior effectiveCommit = widget.dragCommitBehavior ??
+        (widget.thumbDragOnly
+            ? DragCommitBehavior.onRelease
+            : DragCommitBehavior.immediate);
+    final bool previewOnDrag = effectiveCommit == DragCommitBehavior.onRelease;
 
     final thumbShadow = style.shadow ??
         <BoxShadow>[
@@ -589,12 +708,72 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                 math.min(rawGutter, segmentWidth * 0.45),
               );
 
-              // Selected thumb geometry.
-              final idx = _selectedIndex;
-              // Translate index for text direction when using AnimatedPositioned left alignment.
-              final isRTL = Directionality.of(context) == TextDirection.rtl;
-              final logicalIndex = isRTL ? (count - 1 - idx) : idx;
-              final left = padding + logicalIndex * segmentWidth + gutter / 2;
+              // Selected/highlighted thumb geometry.
+              // Support proportional widths by measuring intrinsic content widths.
+              final double equalSegmentWidth = segmentWidth;
+              List<double> segmentWidths;
+              if (widget.layout == FlexSwitchLayout.equal) {
+                segmentWidths = List<double>.filled(count, equalSegmentWidth);
+              } else {
+                double measureText(String text, TextStyle style) {
+                  final tp = TextPainter(
+                    text: TextSpan(text: text, style: style),
+                    textDirection: Directionality.of(context),
+                    maxLines: 1,
+                  )..layout(maxWidth: double.infinity);
+                  return tp.width;
+                }
+
+                const weightActive = FontWeight.w600; // reserve max footprint
+                final baseDefault = widget.style.labelTextStyle ??
+                    theme.textTheme.labelLarge ??
+                    const TextStyle();
+                final iconSize =
+                    widget.style.iconSize ?? math.max(16, height * 0.45);
+
+                final List<double> intrinsic = <double>[];
+                for (final o in widget.options) {
+                  double w = 0;
+                  if (o.icon != null) w += iconSize;
+                  if (o.icon != null && (o.label ?? '').isNotEmpty) {
+                    w += widget.style.gap;
+                  }
+                  if ((o.label ?? '').isNotEmpty) {
+                    final base = o.textStyle ?? baseDefault;
+                    final measureStyle =
+                        base.copyWith(fontWeight: weightActive);
+                    w += measureText(o.label!, measureStyle);
+                  }
+                  w += widget.style.itemPadding.horizontal;
+                  intrinsic.add(w);
+                }
+                final totalIntrinsic =
+                    intrinsic.fold<double>(0, (a, b) => a + b);
+                final scale = (totalIntrinsic == 0)
+                    ? 1.0
+                    : (innerWidth / totalIntrinsic).clamp(0.0, double.infinity);
+                segmentWidths =
+                    intrinsic.map((w) => w * scale).toList(growable: false);
+              }
+
+              final int effectiveIndex =
+                  previewOnDrag && _highlightedIndex != null
+                      ? _highlightedIndex!
+                      : _selectedIndex;
+              final bool isRTL =
+                  Directionality.of(context) == TextDirection.rtl;
+              // Geometry uses physical left-to-right order for prefix sums.
+              final List<double> segmentWidthsLTR = isRTL
+                  ? segmentWidths.reversed.toList(growable: false)
+                  : segmentWidths;
+              final int physicalIndexLTR =
+                  isRTL ? (count - 1 - effectiveIndex) : effectiveIndex;
+              final double prefixSum = segmentWidthsLTR
+                  .take(physicalIndexLTR)
+                  .fold<double>(0, (a, b) => a + b);
+              final left = padding + prefixSum + gutter / 2;
+              final double thumbVisualWidth =
+                  math.max(0, segmentWidthsLTR[physicalIndexLTR] - gutter);
 
               final bgColor = style.backgroundColor ??
                   theme.colorScheme.surfaceContainerHighest.withValues(
@@ -623,24 +802,37 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                       IgnorePointer(
                         child: Stack(
                           children: List.generate(count - 1, (i) {
-                            final isRTL =
-                                Directionality.of(context) == TextDirection.rtl;
-                            final x = padding +
-                                (i + 1) * segmentWidth -
+                            // Divider i sits after physical segment i (LTR order).
+                            final double x = padding +
+                                segmentWidthsLTR
+                                    .take(i + 1)
+                                    .fold<double>(0, (a, b) => a + b) -
                                 (style.dividerThickness / 2);
+                            final bool touchesSelected =
+                                (i == physicalIndexLTR) ||
+                                    (i == physicalIndexLTR - 1);
                             return Positioned(
-                              left: isRTL ? null : x,
-                              right: isRTL ? x : null,
+                              left: x,
                               top: padding,
                               bottom: padding,
                               child: SizedBox(
                                 width: style.dividerThickness,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    color: style.dividerColor ??
-                                        theme.dividerColor.withValues(
-                                          alpha: 0.35,
-                                        ),
+                                child: AnimatedOpacity(
+                                  key: ValueKey('divider_$i'),
+                                  duration: style.dividerFadeDuration ??
+                                      style.duration,
+                                  curve: style.dividerFadeCurve ?? style.curve,
+                                  opacity: (style.hideDividersAdjacentToThumb &&
+                                          touchesSelected)
+                                      ? 0.0
+                                      : 1.0,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: style.dividerColor ??
+                                          theme.dividerColor.withValues(
+                                            alpha: 0.35,
+                                          ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -655,40 +847,46 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                       curve: style.curve,
                       left: left,
                       top: padding,
-                      width: math.max(0, segmentWidth - gutter),
+                      width: thumbVisualWidth,
                       height: height - 2 * padding,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: thumbColor,
-                          borderRadius: thumbRadius,
-                          boxShadow: thumbShadow,
+                      child: TweenAnimationBuilder<double>(
+                        duration: style.duration,
+                        curve: style.curve,
+                        tween: Tween<double>(
+                          begin: 1,
+                          end: (_thumbPressed && !_hovering)
+                              ? (style.thumbPressScale.clamp(0.8, 1.0))
+                              : 1.0,
+                        ),
+                        builder: (context, scale, child) {
+                          final bool isEdgeLeft = physicalIndexLTR == 0;
+                          final bool isEdgeRight =
+                              physicalIndexLTR == count - 1;
+                          final double w = thumbVisualWidth;
+                          final double delta = isEdgeLeft
+                              ? (w - w * scale)
+                              : isEdgeRight
+                                  ? (w * scale - w)
+                                  : 0.0;
+                          return Transform.translate(
+                            offset: Offset(-delta / 2, 0),
+                            child: Transform.scale(
+                              scale: scale,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: thumbColor,
+                            borderRadius: thumbRadius,
+                            boxShadow: thumbShadow,
+                          ),
                         ),
                       ),
                     ),
 
                     // Segment ink overlays are handled by _SegmentInkWell below.
-
-                    // Gestures: drag across the whole control
-                    if (widget.allowDrag)
-                      Positioned.fill(
-                        child: _DragGestureDetector(
-                          onDragStart: () => setState(() => _dragging = true),
-                          onDragEnd: () => setState(() => _dragging = false),
-                          onDragUpdate: (dx) {
-                            final local = dx;
-                            final index = _indexFromDx(
-                              dx: local,
-                              trackWidth: width,
-                              segmentWidth: segmentWidth,
-                              padding: padding,
-                            );
-                            final value = widget.options[index].value;
-                            if (value != widget.selectedValue) {
-                              _announceAndChange(value);
-                            }
-                          },
-                        ),
-                      ),
 
                     // Row of interactive segments (full-width tap target per segment)
                     Padding(
@@ -696,7 +894,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                       child: Row(
                         children: List.generate(count, (i) {
                           final option = widget.options[i];
-                          final selected = i == idx;
+                          final selected = i == effectiveIndex;
                           final activeColor = _resolveActiveLabelColor(
                             option,
                             theme,
@@ -708,10 +906,16 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                           final baseTextStyle = option.textStyle ??
                               widget.style.labelTextStyle ??
                               theme.textTheme.labelLarge;
-                          final textStyle =
-                              (baseTextStyle ?? const TextStyle()).copyWith(
+                          // Jitter-free font weight/color animation
+                          const weightActive = FontWeight.w600;
+                          const weightInactive = FontWeight.w500;
+                          final base = baseTextStyle ?? const TextStyle();
+                          final displayStyle = base.copyWith(
+                            fontWeight:
+                                selected ? weightActive : weightInactive,
                             color: selected ? activeColor : inactiveColor,
                           );
+                          final baseOpacity = option.enabled ? 1.0 : 0.4;
 
                           final iconSize = widget.style.iconSize ??
                               math.max(16, height * 0.45);
@@ -728,18 +932,50 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                                     Icon(
                                       icon,
                                       size: iconSize,
-                                      color: selected
-                                          ? activeColor
-                                          : inactiveColor,
+                                      color: (selected
+                                              ? activeColor
+                                              : inactiveColor)
+                                          .withValues(alpha: baseOpacity),
                                     ),
                                   if (icon != null && label != null)
                                     SizedBox(width: widget.style.gap),
                                   if (label != null)
-                                    Text(
-                                      label,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: textStyle,
+                                    Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        // Reserve max footprint (w600) to avoid reflow
+                                        Opacity(
+                                          opacity: 0,
+                                          child: Text(
+                                            label,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: base.copyWith(
+                                              fontWeight: weightActive,
+                                              color: (selected
+                                                      ? activeColor
+                                                      : inactiveColor)
+                                                  .withValues(
+                                                      alpha: baseOpacity),
+                                            ),
+                                          ),
+                                        ),
+                                        AnimatedDefaultTextStyle(
+                                          duration: style.duration,
+                                          curve: style.curve,
+                                          style: displayStyle.copyWith(
+                                            color: (selected
+                                                    ? activeColor
+                                                    : inactiveColor)
+                                                .withValues(alpha: baseOpacity),
+                                          ),
+                                          child: Text(
+                                            label,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                 ],
                               ),
@@ -747,109 +983,223 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                           );
 
                           // No local borderRadius var needed; InkWell uses thumbRadius directly.
-                          return Expanded(
-                            child: Tooltip(
-                              message: option.tooltip ??
-                                  option.semanticsLabel ??
-                                  option.label ??
-                                  '',
-                              waitDuration: const Duration(milliseconds: 400),
-                              child: Builder(
-                                builder: (inkCtx) {
-                                  return Material(
-                                    type: MaterialType.transparency,
-                                    child: _SegmentInkWell(
-                                      onTap: widget.disabled
-                                          ? null
-                                          : () => _announceAndChange(
-                                                option.value,
-                                              ),
-                                      borderRadius: BorderRadius.circular(
-                                        style.thumbRadius,
-                                      ),
-                                      overlayColor:
-                                          widget.style.segmentOverlayColor ??
-                                              WidgetStateProperty.resolveWith<
-                                                  Color?>((states) {
-                                                final base =
-                                                    theme.colorScheme.onSurface;
-                                                if (states.contains(
-                                                  WidgetState.disabled,
-                                                )) {
-                                                  return Colors.transparent;
-                                                }
-                                                if (states.contains(
-                                                  WidgetState.pressed,
-                                                )) {
-                                                  return base.withValues(
-                                                    alpha: 0.10,
-                                                  );
-                                                }
-                                                if (states.contains(
-                                                  WidgetState.hovered,
-                                                )) {
-                                                  return base.withValues(
-                                                    alpha: 0.06,
-                                                  );
-                                                }
-                                                if (states.contains(
-                                                  WidgetState.focused,
-                                                )) {
-                                                  return base.withValues(
-                                                    alpha: 0.08,
-                                                  );
-                                                }
-                                                return Colors.transparent;
-                                              }),
-                                      splashFactory: style.enableRipple
-                                          ? (style.splashFactory ??
-                                              InkRipple.splashFactory)
-                                          : NoSplash.splashFactory,
-                                      splashColor: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.14),
-                                      horizontalInset: gutter / 2,
-                                      child: Semantics(
-                                        selected: selected,
-                                        button: true,
-                                        label: option.semanticsLabel ??
-                                            option.label ??
-                                            'Option $i',
-                                        child: SizedBox.expand(
-                                          child: Padding(
-                                            padding: style.itemPadding,
-                                            child:
-                                                TweenAnimationBuilder<double>(
+                          final segmentCell = Tooltip(
+                            message: option.tooltip ??
+                                option.semanticsLabel ??
+                                option.label ??
+                                '',
+                            waitDuration: const Duration(milliseconds: 400),
+                            child: Builder(
+                              builder: (inkCtx) {
+                                final isPressed = _pressed.contains(i);
+                                return Material(
+                                  type: MaterialType.transparency,
+                                  child: _SegmentInkWell(
+                                    onTap: (option.enabled && !widget.disabled)
+                                        ? () => _announceAndChange(
+                                              option.value,
+                                            )
+                                        : null,
+                                    onHighlightChanged: (down) {
+                                      setState(() {
+                                        if (down) {
+                                          _pressed.add(i);
+                                          if (i == effectiveIndex) {
+                                            _thumbPressed = true;
+                                          }
+                                        } else {
+                                          _pressed.remove(i);
+                                          if (i == effectiveIndex) {
+                                            _thumbPressed = false;
+                                          }
+                                        }
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(
+                                      style.thumbRadius,
+                                    ),
+                                    overlayColor: widget
+                                            .style.segmentOverlayColor ??
+                                        WidgetStateProperty.resolveWith<Color?>(
+                                            (states) {
+                                          final base =
+                                              theme.colorScheme.onSurface;
+                                          if (states.contains(
+                                            WidgetState.disabled,
+                                          )) {
+                                            return Colors.transparent;
+                                          }
+                                          if (states.contains(
+                                            WidgetState.pressed,
+                                          )) {
+                                            return base.withValues(
+                                              alpha: 0.10,
+                                            );
+                                          }
+                                          if (states.contains(
+                                            WidgetState.hovered,
+                                          )) {
+                                            return base.withValues(
+                                              alpha: 0.06,
+                                            );
+                                          }
+                                          if (states.contains(
+                                            WidgetState.focused,
+                                          )) {
+                                            return base.withValues(
+                                              alpha: 0.08,
+                                            );
+                                          }
+                                          return Colors.transparent;
+                                        }),
+                                    splashFactory: style.enableRipple
+                                        ? (style.splashFactory ??
+                                            InkRipple.splashFactory)
+                                        : NoSplash.splashFactory,
+                                    splashColor: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.14),
+                                    horizontalInset: gutter / 2,
+                                    child: Semantics(
+                                      enabled:
+                                          option.enabled && !widget.disabled,
+                                      selected: selected,
+                                      button: true,
+                                      inMutuallyExclusiveGroup: true,
+                                      label: option.semanticsLabel ??
+                                          option.label ??
+                                          'Option $i',
+                                      child: SizedBox.expand(
+                                        child: Padding(
+                                          padding: style.itemPadding,
+                                          child: TweenAnimationBuilder<double>(
+                                            duration: style.duration,
+                                            curve: style.curve,
+                                            tween: Tween<double>(
+                                              begin: 1,
+                                              end: (selected || _dragging)
+                                                  ? 1.0
+                                                  : 0.96,
+                                            ),
+                                            builder: (context, scale, child) =>
+                                                Transform.scale(
+                                              scale: scale,
+                                              child: child,
+                                            ),
+                                            child: AnimatedOpacity(
                                               duration: style.duration,
                                               curve: style.curve,
-                                              tween: Tween<double>(
-                                                begin: 1,
-                                                end: (selected || _dragging)
-                                                    ? 1.0
-                                                    : 0.96,
-                                              ),
-                                              builder: (context, scale, child) {
-                                                return Transform.scale(
-                                                  scale: scale,
-                                                  child: child,
-                                                );
-                                              },
+                                              opacity: (!selected && isPressed)
+                                                  ? 0.2
+                                                  : 1.0,
                                               child: segmentVisual,
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                );
+                              },
                             ),
                           );
+
+                          // Wrap per layout: equal -> Expanded, proportional -> SizedBox with width.
+                          return (widget.layout == FlexSwitchLayout.equal)
+                              ? Expanded(child: segmentCell)
+                              : SizedBox(
+                                  width: segmentWidths[i], child: segmentCell);
                         }),
                       ),
                     ),
                   ],
                 ),
               );
+
+              // Wrap with drag detector so it participates as an ancestor in the gesture arena.
+              if (widget.allowDrag) {
+                content = _DragGestureDetector(
+                  child: content,
+                  onDragStart: (local) {
+                    // Accept only if not thumb-only, or start over the selected segment.
+                    final int startIndex =
+                        (widget.layout == FlexSwitchLayout.equal)
+                            ? _indexFromDx(
+                                dx: local.dx,
+                                trackWidth: width,
+                                segmentWidth: equalSegmentWidth,
+                                padding: padding,
+                              )
+                            : _indexFromDxVariable(
+                                dx: local.dx,
+                                trackWidth: width,
+                                padding: padding,
+                                segmentWidths: segmentWidthsLTR,
+                              );
+                    final bool startsOnSelected = startIndex == _selectedIndex;
+                    _dragAccepted = !widget.thumbDragOnly || startsOnSelected;
+                    if (!_dragAccepted) return;
+                    setState(() {
+                      _dragging = true;
+                      _thumbPressed = true;
+                      if (previewOnDrag) {
+                        final idxNe = _nearestEnabledIndex(_selectedIndex);
+                        _highlightedIndex = idxNe;
+                      }
+                    });
+                  },
+                  onDragEnd: () {
+                    if (!_dragAccepted) return;
+                    setState(() {
+                      _dragging = false;
+                      _thumbPressed = false;
+                    });
+                    if (previewOnDrag) {
+                      final idx = _highlightedIndex;
+                      if (idx != null && idx != _selectedIndex) {
+                        _announceAndChange(widget.options[idx].value);
+                      }
+                      _highlightedIndex = null;
+                    }
+                    _dragAccepted = false;
+                  },
+                  onDragUpdate: (local) {
+                    if (!_dragAccepted) return;
+                    // Vertical slop guard (cancel preview while out-of-band).
+                    final midY = height / 2;
+                    if ((local.dy - midY).abs() > _kTouchYDistanceThreshold) {
+                      if (previewOnDrag && _highlightedIndex != null) {
+                        setState(() => _highlightedIndex = null);
+                      }
+                      return;
+                    }
+                    final int rawIndex =
+                        (widget.layout == FlexSwitchLayout.equal)
+                            ? _indexFromDx(
+                                dx: local.dx,
+                                trackWidth: width,
+                                segmentWidth: equalSegmentWidth,
+                                padding: padding,
+                              )
+                            : _indexFromDxVariable(
+                                dx: local.dx,
+                                trackWidth: width,
+                                padding: padding,
+                                segmentWidths: segmentWidthsLTR,
+                              );
+                    final index = _nearestEnabledIndex(rawIndex);
+                    if (previewOnDrag) {
+                      if (_highlightedIndex != index) {
+                        setState(() => _highlightedIndex = index);
+                      }
+                    } else {
+                      final value = widget.options[index].value;
+                      if (value != widget.selectedValue) {
+                        _announceAndChange(value);
+                      }
+                    }
+                  },
+                );
+              }
 
               // Outer clip + hover overlay
               content = ClipRRect(
@@ -1001,29 +1351,28 @@ class _TrackDecoration extends StatelessWidget {
 /// Internal: horizontal drag recognizer across the whole control.
 class _DragGestureDetector extends StatelessWidget {
   const _DragGestureDetector({
+    required this.child,
     required this.onDragUpdate,
     required this.onDragStart,
     required this.onDragEnd,
   });
 
-  final void Function(double localDx) onDragUpdate;
-  final VoidCallback onDragStart;
+  final Widget child;
+
+  /// Local pointer position within the control.
+  final void Function(Offset localPosition) onDragUpdate;
+  final void Function(Offset localPosition) onDragStart;
   final VoidCallback onDragEnd;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onHorizontalDragStart: (_) => onDragStart(),
+      onHorizontalDragStart: (d) => onDragStart(d.localPosition),
       onHorizontalDragCancel: onDragEnd,
       onHorizontalDragEnd: (_) => onDragEnd(),
-      onHorizontalDragUpdate: (d) {
-        // Convert global position to local dx within this RenderBox.
-        final box = context.findRenderObject() as RenderBox?;
-        if (box == null) return;
-        final local = box.globalToLocal(d.globalPosition);
-        onDragUpdate(local.dx);
-      },
+      onHorizontalDragUpdate: (d) => onDragUpdate(d.localPosition),
+      child: child,
     );
   }
 }

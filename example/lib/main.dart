@@ -48,9 +48,15 @@ class _FlexSwitchDemoPageState extends State<FlexSwitchDemoPage> {
   double _gutter = 10;
   bool _ripple = false;
   bool _primaryRippleTint = false;
+  bool _thumbDragOnly = false;
+  bool _commitOnRelease = false;
+  bool _proportional = false;
+  bool _showDividers = true;
+  bool _disableMiddle = false;
 
   bool _boolValue = false;
   int _step = 1;
+  int _inboxTab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +90,34 @@ class _FlexSwitchDemoPageState extends State<FlexSwitchDemoPage> {
                 subtitle: const Text('Off = neutral grey, On = brand color'),
                 value: _primaryRippleTint,
                 onChanged: (v) => setState(() => _primaryRippleTint = v),
+              ),
+              SwitchListTile(
+                title: const Text('Thumb-drag-only'),
+                subtitle: const Text('Drag must start on the selected thumb'),
+                value: _thumbDragOnly,
+                onChanged: (v) => setState(() => _thumbDragOnly = v),
+              ),
+              SwitchListTile(
+                title: const Text('Commit on release'),
+                subtitle: const Text('Preview while dragging, commit on lift'),
+                value: _commitOnRelease,
+                onChanged: (v) => setState(() => _commitOnRelease = v),
+              ),
+              SwitchListTile(
+                title: const Text('Proportional widths'),
+                subtitle: const Text('Segments sized to their content'),
+                value: _proportional,
+                onChanged: (v) => setState(() => _proportional = v),
+              ),
+              SwitchListTile(
+                title: const Text('Show dividers'),
+                value: _showDividers,
+                onChanged: (v) => setState(() => _showDividers = v),
+              ),
+              SwitchListTile(
+                title: const Text('Disable middle item'),
+                value: _disableMiddle,
+                onChanged: (v) => setState(() => _disableMiddle = v),
               ),
             ],
           ),
@@ -141,6 +175,13 @@ class _FlexSwitchDemoPageState extends State<FlexSwitchDemoPage> {
                 borderRadius: 16,
                 thumbRadius: 12,
               ),
+              layout: _proportional
+                  ? FlexSwitchLayout.proportional
+                  : FlexSwitchLayout.equal,
+              dragCommitBehavior: _commitOnRelease
+                  ? DragCommitBehavior.onRelease
+                  : DragCommitBehavior.immediate,
+              thumbDragOnly: _thumbDragOnly,
               height: 44,
             ),
           ),
@@ -172,7 +213,7 @@ class _FlexSwitchDemoPageState extends State<FlexSwitchDemoPage> {
                 ThemeMode.dark => Colors.lightBlueAccent,
               },
               style: FlexSwitchStyle(
-                showDividers: true,
+                showDividers: _showDividers,
                 dividerThickness: 1,
                 enableTrackHoverOverlay: _trackHoverOverlay,
                 segmentGutter: _gutter,
@@ -199,6 +240,13 @@ class _FlexSwitchDemoPageState extends State<FlexSwitchDemoPage> {
                 thumbRadius: 12,
               ),
               disabled: _disabled,
+              layout: _proportional
+                  ? FlexSwitchLayout.proportional
+                  : FlexSwitchLayout.equal,
+              dragCommitBehavior: _commitOnRelease
+                  ? DragCommitBehavior.onRelease
+                  : DragCommitBehavior.immediate,
+              thumbDragOnly: _thumbDragOnly,
               height: 48,
             ),
           ),
@@ -210,42 +258,114 @@ class _FlexSwitchDemoPageState extends State<FlexSwitchDemoPage> {
           ),
           const SizedBox(height: 8),
           _Section(
-            child: FlexSwitch.fromValues<int>(
-              values: const [0, 1, 2, 3],
-              selectedValue: _step,
-              onChanged: (v) => setState(() => _step = v),
-              label: (v) => 'Step $v',
-              icon: (v) => switch (v) {
-                0 => Icons.filter_1_rounded,
-                1 => Icons.filter_2_rounded,
-                2 => Icons.filter_3_rounded,
-                _ => Icons.filter_4_rounded,
+            child: Builder(
+              builder: (context) {
+                final options = <SwitchOption<int>>[
+                  const SwitchOption<int>(
+                    value: 0,
+                    label: 'One',
+                    icon: Icons.filter_1_rounded,
+                  ),
+                  SwitchOption<int>(
+                    value: 1,
+                    label: 'Two',
+                    icon: Icons.filter_2_rounded,
+                    enabled: !_disableMiddle,
+                  ),
+                  const SwitchOption<int>(
+                    value: 2,
+                    label: 'Three',
+                    icon: Icons.filter_3_rounded,
+                  ),
+                  const SwitchOption<int>(
+                    value: 3,
+                    label: 'Four',
+                    icon: Icons.filter_4_rounded,
+                  ),
+                ];
+                return FlexSwitch<int>(
+                  options: options,
+                  selectedValue: _step,
+                  onChanged: (v) => setState(() => _step = v),
+                  style: FlexSwitchStyle(
+                    showDividers: _showDividers,
+                    enableTrackHoverOverlay: _trackHoverOverlay,
+                    segmentGutter: _gutter,
+                    enableRipple: _ripple,
+                    segmentOverlayColor: _primaryRippleTint
+                        ? WidgetStateProperty.resolveWith<Color?>((states) {
+                            final scheme = Theme.of(context).colorScheme;
+                            if (states.contains(WidgetState.disabled)) {
+                              return Colors.transparent;
+                            }
+                            if (states.contains(WidgetState.pressed)) {
+                              return scheme.primary.withValues(alpha: 0.10);
+                            }
+                            if (states.contains(WidgetState.hovered)) {
+                              return scheme.primary.withValues(alpha: 0.06);
+                            }
+                            if (states.contains(WidgetState.focused)) {
+                              return scheme.primary.withValues(alpha: 0.08);
+                            }
+                            return Colors.transparent;
+                          })
+                        : null,
+                    borderRadius: 18,
+                    thumbRadius: 14,
+                  ),
+                  disabled: _disabled,
+                  height: 46,
+                  layout: _proportional
+                      ? FlexSwitchLayout.proportional
+                      : FlexSwitchLayout.equal,
+                  dragCommitBehavior: _commitOnRelease
+                      ? DragCommitBehavior.onRelease
+                      : DragCommitBehavior.immediate,
+                  thumbDragOnly: _thumbDragOnly,
+                );
               },
-              activeColor: (v) => Colors.primaries[v % Colors.primaries.length],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          Text(
+            'Proportional widths demo',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          _Section(
+            child: FlexSwitch<int>(
+              options: const [
+                SwitchOption<int>(
+                  value: 0,
+                  label: 'All',
+                  icon: Icons.inbox_rounded,
+                ),
+                SwitchOption<int>(
+                  value: 1,
+                  label: 'Mentions and replies',
+                  icon: Icons.alternate_email_rounded,
+                ),
+                SwitchOption<int>(
+                  value: 2,
+                  label: 'DMs',
+                  icon: Icons.mail_rounded,
+                ),
+              ],
+              selectedValue: _inboxTab,
+              onChanged: (v) => setState(() => _inboxTab = v),
+              layout: FlexSwitchLayout.proportional,
+              dragCommitBehavior: _commitOnRelease
+                  ? DragCommitBehavior.onRelease
+                  : DragCommitBehavior.immediate,
+              thumbDragOnly: _thumbDragOnly,
               style: FlexSwitchStyle(
+                showDividers: _showDividers,
                 enableTrackHoverOverlay: _trackHoverOverlay,
                 segmentGutter: _gutter,
                 enableRipple: _ripple,
-                segmentOverlayColor: _primaryRippleTint
-                    ? WidgetStateProperty.resolveWith<Color?>((states) {
-                        final scheme = Theme.of(context).colorScheme;
-                        if (states.contains(WidgetState.disabled)) {
-                          return Colors.transparent;
-                        }
-                        if (states.contains(WidgetState.pressed)) {
-                          return scheme.primary.withValues(alpha: 0.10);
-                        }
-                        if (states.contains(WidgetState.hovered)) {
-                          return scheme.primary.withValues(alpha: 0.06);
-                        }
-                        if (states.contains(WidgetState.focused)) {
-                          return scheme.primary.withValues(alpha: 0.08);
-                        }
-                        return Colors.transparent;
-                      })
-                    : null,
-                borderRadius: 18,
-                thumbRadius: 14,
+                borderRadius: 16,
+                thumbRadius: 12,
               ),
               disabled: _disabled,
               height: 46,
@@ -262,7 +382,10 @@ class _FlexSwitchDemoPageState extends State<FlexSwitchDemoPage> {
             'disabled: $_disabled, trackHover: $_trackHoverOverlay, gutter: ${_gutter.toStringAsFixed(0)}',
           ),
           Text(
-            'bool: $_boolValue, themeMode: ${widget.themeMode}, step: $_step',
+            'bool: $_boolValue, themeMode: ${widget.themeMode}, step: $_step, inboxTab: $_inboxTab',
+          ),
+          Text(
+            'thumbDragOnly: $_thumbDragOnly, onRelease: $_commitOnRelease, proportional: $_proportional, dividers: $_showDividers, disableMiddle: $_disableMiddle',
           ),
         ],
       ),

@@ -11,6 +11,9 @@ Multi-option segmented control for Flutter. Keyboard accessible, RTL-aware, drag
 - Drag-to-select across segments; full-width tap targets
 - RTL-aware layout and key handling
 - Highly themable via `FlexSwitchStyle`
+- Proportional widths option for content-sized segments
+- Drag commit options (immediate vs on-release) and thumb-drag-only
+- Disable individual options via `SwitchOption.enabled`
 
 ## Install
 
@@ -84,6 +87,28 @@ FlexSwitch.fromValues<String>(
 );
 ```
 
+## Layouts & drag behavior
+```dart
+FlexSwitch<int>(
+  options: const [
+    SwitchOption(value: 0, label: 'All', icon: Icons.inbox_rounded),
+    SwitchOption(value: 1, label: 'Mentions and replies', icon: Icons.alternate_email_rounded),
+    SwitchOption(value: 2, label: 'DMs', icon: Icons.mail_rounded),
+  ],
+  selectedValue: tab,
+  onChanged: (v) => setState(() => tab = v),
+  // Size segments to their content.
+  layout: FlexSwitchLayout.proportional,
+  // Preview while dragging; commit when released.
+  dragCommitBehavior: DragCommitBehavior.onRelease,
+  // Only accept drags that start on the selected thumb.
+  thumbDragOnly: true,
+);
+
+// Disable an option (dimmed, skipped by drag selection):
+const SwitchOption(value: 1, label: 'Two', enabled: false);
+```
+
 ## Styling
 
 ```dart
@@ -94,6 +119,7 @@ const style = FlexSwitchStyle(
   inactiveLabelColor: null, // defaults to blend of onSurface
   borderRadius: 16,
   thumbRadius: 12,
+  thumbPressScale: 0.95,     // scale thumb while pressed (1.0 to disable)
   padding: 5,
   itemPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
   gap: 8,
@@ -106,6 +132,9 @@ const style = FlexSwitchStyle(
   showDividers: false,
   dividerColor: null,
   dividerThickness: 1,
+  hideDividersAdjacentToThumb: true, // fade dividers touching the thumb
+  dividerFadeDuration: null,         // defaults to duration
+  dividerFadeCurve: null,            // defaults to curve
   focusRingWidth: 2,
   enableRipple: false,
   segmentOverlayColor: null,
@@ -114,6 +143,12 @@ const style = FlexSwitchStyle(
   segmentGutter: 6,
 );
 ```
+
+## What’s new (1.1.0)
+- Proportional layout for content-sized segments.
+- Commit-on-release drag with preview, plus thumb-drag-only.
+- `SwitchOption.enabled` to disable individual segments.
+- Divider fade near the thumb; pressed thumb scale.
 
 ## Accessibility
 - Announces labels via Semantics; exposes selected state per segment
