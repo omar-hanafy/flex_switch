@@ -140,9 +140,12 @@ const style = FlexSwitchStyle(
   segmentOverlayColor: null,
   splashFactory: null,
   enableTrackHoverOverlay: true,
-  segmentGutter: 6,
+  segmentGutter: 6,        // interior gap; outer edges keep the track padding
 );
 ```
+
+## What’s new (1.1.1)
+- Balanced the default thumb gutter so outer padding matches top/bottom spacing.
 
 ## What’s new (1.1.0)
 - Proportional layout for content-sized segments.

@@ -195,8 +195,9 @@ class FlexSwitchStyle {
   /// Show a subtle hover overlay across the whole track.
   final bool enableTrackHoverOverlay;
 
-  /// Horizontal space kept free on both sides of each segment (in logical px).
-  /// The thumb and interaction overlay are inset by this amount.
+  /// Horizontal space reserved around each segment (logical px).
+  /// Interior boundaries apply half this value per neighboring segment, while
+  /// the outer track edges keep the full [padding] distance.
   final double segmentGutter;
 
   /// Returns a copy with the specified fields replaced.
@@ -771,9 +772,17 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
               final double prefixSum = segmentWidthsLTR
                   .take(physicalIndexLTR)
                   .fold<double>(0, (a, b) => a + b);
-              final left = padding + prefixSum + gutter / 2;
-              final double thumbVisualWidth =
-                  math.max(0, segmentWidthsLTR[physicalIndexLTR] - gutter);
+              final bool isEdgeLeft = physicalIndexLTR == 0;
+              final bool isEdgeRight = physicalIndexLTR == count - 1;
+              final double leadingInset = isEdgeLeft ? 0.0 : gutter / 2;
+              final double trailingInset = isEdgeRight ? 0.0 : gutter / 2;
+              final left = padding + prefixSum + leadingInset;
+              final double thumbVisualWidth = math.max(
+                0,
+                segmentWidthsLTR[physicalIndexLTR] -
+                    leadingInset -
+                    trailingInset,
+              );
 
               final bgColor = style.backgroundColor ??
                   theme.colorScheme.surfaceContainerHighest.withValues(
@@ -859,9 +868,6 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                               : 1.0,
                         ),
                         builder: (context, scale, child) {
-                          final bool isEdgeLeft = physicalIndexLTR == 0;
-                          final bool isEdgeRight =
-                              physicalIndexLTR == count - 1;
                           final double w = thumbVisualWidth;
                           final double delta = isEdgeLeft
                               ? (w - w * scale)
@@ -992,6 +998,16 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                             child: Builder(
                               builder: (inkCtx) {
                                 final isPressed = _pressed.contains(i);
+                                final int physicalIndexForInk = isRTL
+                                    ? (count - 1 - i)
+                                    : i;
+                                final double inkLeftInset =
+                                    physicalIndexForInk == 0 ? 0.0 : gutter / 2;
+                                final double inkRightInset =
+                                    physicalIndexForInk == count - 1
+                                        ? 0.0
+                                        : gutter / 2;
+
                                 return Material(
                                   type: MaterialType.transparency,
                                   child: _SegmentInkWell(
@@ -1058,7 +1074,8 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                                         : NoSplash.splashFactory,
                                     splashColor: theme.colorScheme.onSurface
                                         .withValues(alpha: 0.14),
-                                    horizontalInset: gutter / 2,
+                                    leftInset: inkLeftInset,
+                                    rightInset: inkRightInset,
                                     child: Semantics(
                                       enabled:
                                           option.enabled && !widget.disabled,
@@ -1248,11 +1265,12 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
 }
 
 /// Ink for a full-width hit target whose ink/overlay is inset horizontally.
-/// This lets ripple/hover/focus match the moving thumb geometry exactly
-/// while keeping the full segment hit target.
+/// The insets can differ per edge so the overlay matches the thumb even when
+/// the outer track edges keep full padding.
 class _SegmentInkWell extends InkResponse {
   const _SegmentInkWell({
-    required this.horizontalInset,
+    required this.leftInset,
+    required this.rightInset,
     required Widget super.child,
     super.onTap,
     super.onDoubleTap,
@@ -1287,16 +1305,24 @@ class _SegmentInkWell extends InkResponse {
     super.key,
   }) : super(containedInkWell: true, highlightShape: BoxShape.rectangle);
 
-  /// Horizontal inset (logical px) on each side for ink/overlay.
-  final double horizontalInset;
+  /// Horizontal inset (logical px) applied from the left edge.
+  final double leftInset;
+
+  /// Horizontal inset (logical px) applied from the right edge.
+  final double rightInset;
 
   @override
   RectCallback? getRectCallback(RenderBox referenceBox) {
     return () {
       final size = referenceBox.size;
-      final inset = horizontalInset.clamp(0.0, size.width / 2);
-      return Offset(inset, 0) &
-          Size(math.max(0, size.width - 2 * inset), size.height);
+      final double clampedLeft =
+          leftInset.clamp(0.0, size.width).toDouble();
+      final double clampedRight = rightInset
+          .clamp(0.0, math.max(0.0, size.width - clampedLeft))
+          .toDouble();
+      final double width =
+          math.max(0, size.width - clampedLeft - clampedRight);
+      return Offset(clampedLeft, 0) & Size(width, size.height);
     };
   }
 }
