@@ -8,8 +8,8 @@ import 'dart:ui' as ui show SemanticsAction;
 
 import 'package:flex_switch/flex_switch.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 enum _Mode { day, night, system }
@@ -609,7 +609,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final node = tester.getSemantics(find.bySemanticsLabel('Power'));
-        final owner = tester.binding.pipelineOwner.semanticsOwner!;
+        final SemanticsOwner owner = node.owner!;
 
         owner.performAction(node.id, ui.SemanticsAction.increase);
         await tester.pumpAndSettle();
