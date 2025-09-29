@@ -998,9 +998,8 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                             child: Builder(
                               builder: (inkCtx) {
                                 final isPressed = _pressed.contains(i);
-                                final int physicalIndexForInk = isRTL
-                                    ? (count - 1 - i)
-                                    : i;
+                                final int physicalIndexForInk =
+                                    isRTL ? (count - 1 - i) : i;
                                 final double inkLeftInset =
                                     physicalIndexForInk == 0 ? 0.0 : gutter / 2;
                                 final double inkRightInset =
@@ -1315,13 +1314,11 @@ class _SegmentInkWell extends InkResponse {
   RectCallback? getRectCallback(RenderBox referenceBox) {
     return () {
       final size = referenceBox.size;
-      final double clampedLeft =
-          leftInset.clamp(0.0, size.width).toDouble();
+      final double clampedLeft = leftInset.clamp(0.0, size.width);
       final double clampedRight = rightInset
           .clamp(0.0, math.max(0.0, size.width - clampedLeft))
           .toDouble();
-      final double width =
-          math.max(0, size.width - clampedLeft - clampedRight);
+      final double width = math.max(0, size.width - clampedLeft - clampedRight);
       return Offset(clampedLeft, 0) & Size(width, size.height);
     };
   }
