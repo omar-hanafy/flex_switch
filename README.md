@@ -144,15 +144,6 @@ const style = FlexSwitchStyle(
 );
 ```
 
-## What’s new (1.1.1)
-- Balanced the default thumb gutter so outer padding matches top/bottom spacing.
-
-## What’s new (1.1.0)
-- Proportional layout for content-sized segments.
-- Commit-on-release drag with preview, plus thumb-drag-only.
-- `SwitchOption.enabled` to disable individual segments.
-- Divider fade near the thumb; pressed thumb scale.
-
 ## Accessibility
 - Announces labels via Semantics; exposes selected state per segment
 - Full keyboard support: Left/Right (RTL-aware), Home, End, Enter/Space

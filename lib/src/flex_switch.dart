@@ -309,7 +309,10 @@ class FlexSwitch<T> extends StatefulWidget {
     this.thumbDragOnly = false,
     this.semanticsLabel,
     this.semanticValueBuilder,
-  }) : assert(options.length >= 2, 'FlexSwitch requires at least two options');
+  }) : assert(
+          options.length >= 2,
+          'FlexSwitch requires at least two options',
+        );
 
   /// Convenience constructor for a two-state boolean switch.
   ///
@@ -499,6 +502,8 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
   // Drag state
   bool _dragging = false;
   int? _highlightedIndex; // Preview index when commit-on-release is active
+  int? _lastDragIndex; // Last enabled index visited during drag
+  Offset? _lastDragDownLocal; // Pointer down location before drag recognition
   static const double _kTouchYDistanceThreshold = 50; // logical px guard
   bool _dragAccepted = false;
 
@@ -519,19 +524,23 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
   }
 
   void _moveBy(int delta) {
+    final total = widget.options.length;
+    if (total < 2) return;
     final dir = Directionality.of(context);
     // Respect RTL for left/right keys.
     final effectiveDelta = (dir == TextDirection.ltr) ? delta : -delta;
     final next = (_selectedIndex + effectiveDelta).clamp(
       0,
-      widget.options.length - 1,
+      total - 1,
     );
     _announceAndChange(widget.options[next].value);
   }
 
   void _activate() {
+    final total = widget.options.length;
+    if (total < 2) return;
     // Activation moves to next item (wrap).
-    final next = (_selectedIndex + 1) % widget.options.length;
+    final next = (_selectedIndex + 1) % total;
     _announceAndChange(widget.options[next].value);
   }
 
@@ -573,19 +582,22 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
         : physicalIndex;
   }
 
-  bool _isEnabledIndex(int i) => widget.options[i].enabled;
+  bool _isEnabledIndex(int i) =>
+      i >= 0 && i < widget.options.length && widget.options[i].enabled;
 
   /// Pick the nearest enabled index to [i]. Prefers right, then left at equal distance.
   int _nearestEnabledIndex(int i) {
-    if (_isEnabledIndex(i)) return i;
+    if (widget.options.isEmpty) return 0;
     final last = widget.options.length - 1;
+    final int base = i.clamp(0, last);
+    if (_isEnabledIndex(base)) return base;
     for (int d = 1; d <= last; d++) {
-      final r = i + d;
+      final r = base + d;
       if (r <= last && _isEnabledIndex(r)) return r;
-      final l = i - d;
+      final l = base - d;
       if (l >= 0 && _isEnabledIndex(l)) return l;
     }
-    return i; // fallback (shouldn't happen if at least one enabled)
+    return base; // fallback (shouldn't happen if at least one enabled)
   }
 
   Color _resolveActiveLabelColor(SwitchOption<T> o, ThemeData theme) =>
@@ -624,6 +636,10 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
     final theme = Theme.of(context);
     final height = widget.height ?? _computeDefaultHeight(theme);
     final style = widget.style;
+    final List<SwitchOption<T>> options = widget.options;
+    final int optionCount = options.length;
+    final int selectedIndex = _selectedIndex.clamp(0, optionCount - 1);
+    final SwitchOption<T> selectedOption = options[selectedIndex];
     final DragCommitBehavior effectiveCommit = widget.dragCommitBehavior ??
         (widget.thumbDragOnly
             ? DragCommitBehavior.onRelease
@@ -679,9 +695,9 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
         container: true,
         label: widget.semanticsLabel,
         value: widget.semanticValueBuilder?.call(widget.selectedValue) ??
-            widget.options[_selectedIndex].semanticsLabel ??
-            widget.options[_selectedIndex].label ??
-            _selectedIndex.toString(),
+            selectedOption.semanticsLabel ??
+            selectedOption.label ??
+            selectedIndex.toString(),
         increasedValue: _kSemanticIncrease,
         decreasedValue: _kSemanticDecrease,
         onIncrease: widget.disabled ? null : () => _moveBy(1),
@@ -696,6 +712,16 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
               final width = hasWidth
                   ? constraints.maxWidth
                   : 300.0; // safe default if unconstrained
+              final media = MediaQuery.maybeOf(context);
+              final textScaler = media?.textScaler ?? TextScaler.noScaling;
+              final textDirection = Directionality.of(context);
+              const weightActive = FontWeight.w600;
+              const weightInactive = FontWeight.w500;
+              final baseDefault = style.labelTextStyle ??
+                  theme.textTheme.labelLarge ??
+                  const TextStyle();
+              final iconSize =
+                  widget.style.iconSize ?? math.max(16, height * 0.45);
               final trackRadius = BorderRadius.circular(style.borderRadius);
               final thumbRadius = BorderRadius.circular(style.thumbRadius);
               final padding = style.padding;
@@ -709,6 +735,26 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                 math.min(rawGutter, segmentWidth * 0.45),
               );
 
+              double measureLabelWidth(SwitchOption<T> option) {
+                final label = option.label;
+                if (label == null || label.isEmpty) return 0;
+                final labelStyle = (option.textStyle ?? baseDefault)
+                    .copyWith(fontWeight: weightActive);
+                final painter = TextPainter(
+                  text: TextSpan(text: label, style: labelStyle),
+                  textDirection: textDirection,
+                  maxLines: 1,
+                  textScaler: textScaler,
+                )..layout(maxWidth: double.infinity);
+                return painter.width;
+              }
+
+              final List<double> labelReserveWidths = List<double>.generate(
+                count,
+                (i) => measureLabelWidth(widget.options[i]),
+                growable: false,
+              );
+
               // Selected/highlighted thumb geometry.
               // Support proportional widths by measuring intrinsic content widths.
               final double equalSegmentWidth = segmentWidth;
@@ -716,34 +762,13 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
               if (widget.layout == FlexSwitchLayout.equal) {
                 segmentWidths = List<double>.filled(count, equalSegmentWidth);
               } else {
-                double measureText(String text, TextStyle style) {
-                  final tp = TextPainter(
-                    text: TextSpan(text: text, style: style),
-                    textDirection: Directionality.of(context),
-                    maxLines: 1,
-                  )..layout(maxWidth: double.infinity);
-                  return tp.width;
-                }
-
-                const weightActive = FontWeight.w600; // reserve max footprint
-                final baseDefault = widget.style.labelTextStyle ??
-                    theme.textTheme.labelLarge ??
-                    const TextStyle();
-                final iconSize =
-                    widget.style.iconSize ?? math.max(16, height * 0.45);
-
                 final List<double> intrinsic = <double>[];
-                for (final o in widget.options) {
-                  double w = 0;
+                for (var i = 0; i < count; i++) {
+                  final o = widget.options[i];
+                  double w = labelReserveWidths[i];
                   if (o.icon != null) w += iconSize;
                   if (o.icon != null && (o.label ?? '').isNotEmpty) {
                     w += widget.style.gap;
-                  }
-                  if ((o.label ?? '').isNotEmpty) {
-                    final base = o.textStyle ?? baseDefault;
-                    final measureStyle =
-                        base.copyWith(fontWeight: weightActive);
-                    w += measureText(o.label!, measureStyle);
                   }
                   w += widget.style.itemPadding.horizontal;
                   intrinsic.add(w);
@@ -913,8 +938,6 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                               widget.style.labelTextStyle ??
                               theme.textTheme.labelLarge;
                           // Jitter-free font weight/color animation
-                          const weightActive = FontWeight.w600;
-                          const weightInactive = FontWeight.w500;
                           final base = baseTextStyle ?? const TextStyle();
                           final displayStyle = base.copyWith(
                             fontWeight:
@@ -922,9 +945,8 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                             color: selected ? activeColor : inactiveColor,
                           );
                           final baseOpacity = option.enabled ? 1.0 : 0.4;
+                          final reservedLabelWidth = labelReserveWidths[i];
 
-                          final iconSize = widget.style.iconSize ??
-                              math.max(16, height * 0.45);
                           final label = option.label;
                           final icon = option.icon;
 
@@ -946,42 +968,25 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                                   if (icon != null && label != null)
                                     SizedBox(width: widget.style.gap),
                                   if (label != null)
-                                    Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        // Reserve max footprint (w600) to avoid reflow
-                                        Opacity(
-                                          opacity: 0,
-                                          child: Text(
-                                            label,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: base.copyWith(
-                                              fontWeight: weightActive,
-                                              color: (selected
-                                                      ? activeColor
-                                                      : inactiveColor)
-                                                  .withValues(
-                                                      alpha: baseOpacity),
-                                            ),
-                                          ),
+                                    ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: reservedLabelWidth,
+                                      ),
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: style.duration,
+                                        curve: style.curve,
+                                        style: displayStyle.copyWith(
+                                          color: (selected
+                                                  ? activeColor
+                                                  : inactiveColor)
+                                              .withValues(alpha: baseOpacity),
                                         ),
-                                        AnimatedDefaultTextStyle(
-                                          duration: style.duration,
-                                          curve: style.curve,
-                                          style: displayStyle.copyWith(
-                                            color: (selected
-                                                    ? activeColor
-                                                    : inactiveColor)
-                                                .withValues(alpha: baseOpacity),
-                                          ),
-                                          child: Text(
-                                            label,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                        child: Text(
+                                          label,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ],
+                                      ),
                                     ),
                                 ],
                               ),
@@ -1135,47 +1140,71 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
               if (widget.allowDrag) {
                 content = _DragGestureDetector(
                   child: content,
+                  onDragDown: (local) => _lastDragDownLocal = local,
                   onDragStart: (local) {
                     // Accept only if not thumb-only, or start over the selected segment.
-                    final int startIndex =
+                    final Offset originLocal = _lastDragDownLocal ?? local;
+                    int indexFromLocal(Offset position) =>
                         (widget.layout == FlexSwitchLayout.equal)
                             ? _indexFromDx(
-                                dx: local.dx,
+                                dx: position.dx,
                                 trackWidth: width,
                                 segmentWidth: equalSegmentWidth,
                                 padding: padding,
                               )
                             : _indexFromDxVariable(
-                                dx: local.dx,
+                                dx: position.dx,
                                 trackWidth: width,
                                 padding: padding,
                                 segmentWidths: segmentWidthsLTR,
                               );
-                    final bool startsOnSelected = startIndex == _selectedIndex;
+                    final int originIndex = indexFromLocal(originLocal);
+                    final int pointerIndex = indexFromLocal(local);
+                    final bool startsOnSelected = originIndex == _selectedIndex;
                     _dragAccepted = !widget.thumbDragOnly || startsOnSelected;
-                    if (!_dragAccepted) return;
+                    if (!_dragAccepted) {
+                      _lastDragIndex = null;
+                      _lastDragDownLocal = null;
+                      return;
+                    }
+                    final int initialDragIndex =
+                        _nearestEnabledIndex(pointerIndex);
+                    _lastDragIndex = initialDragIndex;
                     setState(() {
                       _dragging = true;
                       _thumbPressed = true;
                       if (previewOnDrag) {
-                        final idxNe = _nearestEnabledIndex(_selectedIndex);
-                        _highlightedIndex = idxNe;
+                        _highlightedIndex = initialDragIndex;
                       }
                     });
+                    if (!previewOnDrag) {
+                      final value = widget.options[initialDragIndex].value;
+                      if (value != widget.selectedValue) {
+                        _announceAndChange(value);
+                      }
+                    }
+                    _lastDragDownLocal = null;
                   },
                   onDragEnd: () {
                     if (!_dragAccepted) return;
+                    final int? commitIndex = previewOnDrag
+                        ? (_highlightedIndex ?? _lastDragIndex)
+                        : null;
                     setState(() {
                       _dragging = false;
                       _thumbPressed = false;
-                    });
-                    if (previewOnDrag) {
-                      final idx = _highlightedIndex;
-                      if (idx != null && idx != _selectedIndex) {
-                        _announceAndChange(widget.options[idx].value);
+                      if (previewOnDrag) {
+                        _highlightedIndex = null;
                       }
-                      _highlightedIndex = null;
+                    });
+                    if (commitIndex != null &&
+                        commitIndex >= 0 &&
+                        commitIndex < widget.options.length &&
+                        commitIndex != _selectedIndex) {
+                      _announceAndChange(widget.options[commitIndex].value);
                     }
+                    _lastDragIndex = null;
+                    _lastDragDownLocal = null;
                     _dragAccepted = false;
                   },
                   onDragUpdate: (local) {
@@ -1186,6 +1215,8 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                       if (previewOnDrag && _highlightedIndex != null) {
                         setState(() => _highlightedIndex = null);
                       }
+                      _lastDragIndex = null;
+                      _lastDragDownLocal = null;
                       return;
                     }
                     final int rawIndex =
@@ -1203,6 +1234,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                                 segmentWidths: segmentWidthsLTR,
                               );
                     final index = _nearestEnabledIndex(rawIndex);
+                    _lastDragIndex = index;
                     if (previewOnDrag) {
                       if (_highlightedIndex != index) {
                         setState(() => _highlightedIndex = index);
@@ -1378,6 +1410,7 @@ class _DragGestureDetector extends StatelessWidget {
     required this.onDragUpdate,
     required this.onDragStart,
     required this.onDragEnd,
+    this.onDragDown,
   });
 
   final Widget child;
@@ -1386,11 +1419,14 @@ class _DragGestureDetector extends StatelessWidget {
   final void Function(Offset localPosition) onDragUpdate;
   final void Function(Offset localPosition) onDragStart;
   final VoidCallback onDragEnd;
+  final void Function(Offset localPosition)? onDragDown;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
+      onHorizontalDragDown:
+          onDragDown == null ? null : (d) => onDragDown!(d.localPosition),
       onHorizontalDragStart: (d) => onDragStart(d.localPosition),
       onHorizontalDragCancel: onDragEnd,
       onHorizontalDragEnd: (_) => onDragEnd(),
