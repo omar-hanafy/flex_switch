@@ -6,6 +6,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'flex_switch_style.dart';
+
 /// A single selectable option used by [FlexSwitch].
 ///
 /// Each option holds a `value` of type `T` and optional presentation
@@ -71,201 +73,6 @@ class SwitchOption<T> extends Equatable {
   List<Object?> get props => [value];
 }
 
-/// Visual style for [FlexSwitch].
-///
-/// All fields are optional; sensible defaults are used based on the active
-/// [ThemeData]. Use [copyWith] to derive small variations.
-class FlexSwitchStyle {
-  /// Creates a style descriptor for [FlexSwitch]. All parameters are optional.
-  const FlexSwitchStyle({
-    this.backgroundColor,
-    this.thumbColor,
-    this.activeLabelColor,
-    this.inactiveLabelColor,
-    this.borderRadius = 16.0,
-    this.thumbRadius = 12.0,
-    this.thumbPressScale = 0.95,
-    this.padding = 5.0,
-    this.itemPadding = const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-    this.gap = 8.0,
-    this.shadow,
-    this.duration = const Duration(milliseconds: 250),
-    this.curve = Curves.easeInOut,
-    this.border,
-    this.labelTextStyle,
-    this.iconSize,
-    this.showDividers = false,
-    this.dividerColor,
-    this.dividerThickness = 1.0,
-    this.hideDividersAdjacentToThumb = true,
-    this.dividerFadeDuration,
-    this.dividerFadeCurve,
-    this.focusRingWidth = 2.0,
-    this.enableRipple = false,
-    this.segmentOverlayColor,
-    this.splashFactory,
-    this.enableTrackHoverOverlay = true,
-    this.segmentGutter = 6.0,
-  });
-
-  /// Background color of the outer track.
-  final Color? backgroundColor;
-
-  /// Background color of the moving thumb (selected segment highlight).
-  final Color? thumbColor;
-
-  /// Color for labels/icons in the selected segment.
-  /// Falls back to [ColorScheme.primary] if null.
-  final Color? activeLabelColor;
-
-  /// Color for labels/icons in unselected segments.
-  /// Falls back to a blended [ColorScheme.onSurface] if null.
-  final Color? inactiveLabelColor;
-
-  /// Geometry.
-  ///
-  /// [borderRadius] rounds the outer track.
-  final double borderRadius;
-
-  /// Rounding applied to the moving thumb.
-  final double thumbRadius;
-
-  /// Scale applied to the thumb while pressed (pinned-edge transform keeps the
-  /// touching edge fixed). Set to 1.0 to disable.
-  final double thumbPressScale;
-
-  /// Padding inside the outer track (applies to all sides).
-  final double padding;
-
-  /// Padding around the contents of each segment.
-  final EdgeInsets itemPadding;
-
-  /// Horizontal space between a [SwitchOption.icon] and [SwitchOption.label]
-  /// within a segment.
-  final double gap;
-
-  /// Thumb shadow.
-  final List<BoxShadow>? shadow;
-
-  /// Animation parameters.
-  /// Duration of thumb/content transitions.
-  final Duration duration;
-
-  /// Easing curve for thumb/content transitions.
-  final Curve curve;
-
-  /// Optional border for the outer track (e.g. `Border.all(...)`).
-  final BoxBorder? border;
-
-  /// Typographic defaults (overridable per-option).
-  final TextStyle? labelTextStyle;
-
-  /// Fixed icon size; if null, computed from height.
-  final double? iconSize;
-
-  /// Whether to draw vertical dividers between segments.
-  final bool showDividers;
-
-  /// Color of the vertical dividers (falls back to theme dividerColor).
-  final Color? dividerColor;
-
-  /// Thickness of the vertical dividers in logical pixels.
-  final double dividerThickness;
-
-  /// When [showDividers] is true: fade dividers that touch the highlighted/selected
-  /// segment, matching Cupertino's behavior.
-  final bool hideDividersAdjacentToThumb;
-
-  /// Optional override for divider fade duration/curve. Falls back to [duration]/[curve].
-  final Duration? dividerFadeDuration;
-  final Curve? dividerFadeCurve;
-
-  /// Focus ring width for keyboard focus.
-  final double focusRingWidth;
-
-  /// Interaction visuals for segments.
-  final bool enableRipple;
-
-  /// Overlay color for segment interactions (pressed/hover/focus).
-  final WidgetStateProperty<Color?>? segmentOverlayColor;
-
-  /// Splash factory used when [enableRipple] is true.
-  final InteractiveInkFeatureFactory? splashFactory;
-
-  /// Show a subtle hover overlay across the whole track.
-  final bool enableTrackHoverOverlay;
-
-  /// Horizontal space reserved around each segment (logical px).
-  /// Interior boundaries apply half this value per neighboring segment, while
-  /// the outer track edges keep the full [padding] distance.
-  final double segmentGutter;
-
-  /// Returns a copy with the specified fields replaced.
-  FlexSwitchStyle copyWith({
-    Color? backgroundColor,
-    Color? thumbColor,
-    Color? activeLabelColor,
-    Color? inactiveLabelColor,
-    double? borderRadius,
-    double? thumbRadius,
-    double? thumbPressScale,
-    double? padding,
-    EdgeInsets? itemPadding,
-    double? gap,
-    List<BoxShadow>? shadow,
-    Duration? duration,
-    Curve? curve,
-    BoxBorder? border,
-    TextStyle? labelTextStyle,
-    double? iconSize,
-    bool? showDividers,
-    Color? dividerColor,
-    double? dividerThickness,
-    bool? hideDividersAdjacentToThumb,
-    Duration? dividerFadeDuration,
-    Curve? dividerFadeCurve,
-    double? focusRingWidth,
-    bool? enableRipple,
-    WidgetStateProperty<Color?>? segmentOverlayColor,
-    InteractiveInkFeatureFactory? splashFactory,
-    bool? enableTrackHoverOverlay,
-    double? segmentGutter,
-  }) {
-    return FlexSwitchStyle(
-      backgroundColor: backgroundColor ?? this.backgroundColor,
-      thumbColor: thumbColor ?? this.thumbColor,
-      activeLabelColor: activeLabelColor ?? this.activeLabelColor,
-      inactiveLabelColor: inactiveLabelColor ?? this.inactiveLabelColor,
-      borderRadius: borderRadius ?? this.borderRadius,
-      thumbRadius: thumbRadius ?? this.thumbRadius,
-      thumbPressScale: thumbPressScale ?? this.thumbPressScale,
-      padding: padding ?? this.padding,
-      itemPadding: itemPadding ?? this.itemPadding,
-      gap: gap ?? this.gap,
-      shadow: shadow ?? this.shadow,
-      duration: duration ?? this.duration,
-      curve: curve ?? this.curve,
-      border: border ?? this.border,
-      labelTextStyle: labelTextStyle ?? this.labelTextStyle,
-      iconSize: iconSize ?? this.iconSize,
-      showDividers: showDividers ?? this.showDividers,
-      dividerColor: dividerColor ?? this.dividerColor,
-      dividerThickness: dividerThickness ?? this.dividerThickness,
-      hideDividersAdjacentToThumb:
-          hideDividersAdjacentToThumb ?? this.hideDividersAdjacentToThumb,
-      dividerFadeDuration: dividerFadeDuration ?? this.dividerFadeDuration,
-      dividerFadeCurve: dividerFadeCurve ?? this.dividerFadeCurve,
-      focusRingWidth: focusRingWidth ?? this.focusRingWidth,
-      enableRipple: enableRipple ?? this.enableRipple,
-      segmentOverlayColor: segmentOverlayColor ?? this.segmentOverlayColor,
-      splashFactory: splashFactory ?? this.splashFactory,
-      enableTrackHoverOverlay:
-          enableTrackHoverOverlay ?? this.enableTrackHoverOverlay,
-      segmentGutter: segmentGutter ?? this.segmentGutter,
-    );
-  }
-}
-
 /// Layout models for [FlexSwitch].
 ///
 /// Currently only [equal] is supported: all segments share equal width.
@@ -299,7 +106,7 @@ class FlexSwitch<T> extends StatefulWidget {
     required this.options,
     required this.selectedValue,
     required this.onChanged,
-    this.style = const FlexSwitchStyle(),
+    this.style,
     this.height,
     this.disabled = false,
     this.hapticFeedback = true,
@@ -326,7 +133,7 @@ class FlexSwitch<T> extends StatefulWidget {
     String? falseLabel,
     IconData? trueIcon,
     IconData? falseIcon,
-    FlexSwitchStyle style = const FlexSwitchStyle(),
+    FlexSwitchStyle? style,
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
@@ -367,7 +174,7 @@ class FlexSwitch<T> extends StatefulWidget {
     String Function(E)? labelBuilder,
     IconData Function(E)? iconBuilder,
     Color Function(E)? activeColorBuilder,
-    FlexSwitchStyle style = const FlexSwitchStyle(),
+    FlexSwitchStyle? style,
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
@@ -413,7 +220,7 @@ class FlexSwitch<T> extends StatefulWidget {
     required String Function(V) label,
     IconData Function(V)? icon,
     Color Function(V)? activeColor,
-    FlexSwitchStyle style = const FlexSwitchStyle(),
+    FlexSwitchStyle? style,
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
@@ -457,7 +264,7 @@ class FlexSwitch<T> extends StatefulWidget {
   final ValueChanged<T> onChanged;
 
   /// Visual customization and interaction styling.
-  final FlexSwitchStyle style;
+  final FlexSwitchStyle? style;
 
   /// Height of the control. If null, an adaptive default is used.
   final double? height;
@@ -600,16 +407,6 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
     return base; // fallback (shouldn't happen if at least one enabled)
   }
 
-  Color _resolveActiveLabelColor(SwitchOption<T> o, ThemeData theme) =>
-      o.activeColor ??
-      widget.style.activeLabelColor ??
-      theme.colorScheme.primary;
-
-  Color _resolveInactiveLabelColor(SwitchOption<T> o, ThemeData theme) =>
-      o.inactiveColor ??
-      widget.style.inactiveLabelColor ??
-      theme.colorScheme.onSurface.withValues(alpha: 0.7);
-
   // Segment overlay color resolution is now delegated to Ink overlayColor
   // via WidgetStateProperty on _SegmentInkWell; no manual overlay layer.
 
@@ -635,7 +432,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final height = widget.height ?? _computeDefaultHeight(theme);
-    final style = widget.style;
+    final style = FlexSwitchTheme.resolve(context, widget.style);
     final List<SwitchOption<T>> options = widget.options;
     final int optionCount = options.length;
     final int selectedIndex = _selectedIndex.clamp(0, optionCount - 1);
@@ -720,8 +517,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
               final baseDefault = style.labelTextStyle ??
                   theme.textTheme.labelLarge ??
                   const TextStyle();
-              final iconSize =
-                  widget.style.iconSize ?? math.max(16, height * 0.45);
+              final iconSize = style.iconSize ?? math.max(16, height * 0.45);
               final trackRadius = BorderRadius.circular(style.borderRadius);
               final thumbRadius = BorderRadius.circular(style.thumbRadius);
               final padding = style.padding;
@@ -768,9 +564,9 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                   double w = labelReserveWidths[i];
                   if (o.icon != null) w += iconSize;
                   if (o.icon != null && (o.label ?? '').isNotEmpty) {
-                    w += widget.style.gap;
+                    w += style.gap;
                   }
-                  w += widget.style.itemPadding.horizontal;
+                  w += style.itemPadding.horizontal;
                   intrinsic.add(w);
                 }
                 final totalIntrinsic =
@@ -926,16 +722,15 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                         children: List.generate(count, (i) {
                           final option = widget.options[i];
                           final selected = i == effectiveIndex;
-                          final activeColor = _resolveActiveLabelColor(
-                            option,
-                            theme,
-                          );
-                          final inactiveColor = _resolveInactiveLabelColor(
-                            option,
-                            theme,
-                          );
+                          final Color activeColor = option.activeColor ??
+                              style.activeLabelColor ??
+                              theme.colorScheme.primary;
+                          final Color inactiveColor = option.inactiveColor ??
+                              style.inactiveLabelColor ??
+                              theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.7);
                           final baseTextStyle = option.textStyle ??
-                              widget.style.labelTextStyle ??
+                              style.labelTextStyle ??
                               theme.textTheme.labelLarge;
                           // Jitter-free font weight/color animation
                           final base = baseTextStyle ?? const TextStyle();
@@ -966,7 +761,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                                           .withValues(alpha: baseOpacity),
                                     ),
                                   if (icon != null && label != null)
-                                    SizedBox(width: widget.style.gap),
+                                    SizedBox(width: style.gap),
                                   if (label != null)
                                     ConstrainedBox(
                                       constraints: BoxConstraints(
@@ -1038,8 +833,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                                     borderRadius: BorderRadius.circular(
                                       style.thumbRadius,
                                     ),
-                                    overlayColor: widget
-                                            .style.segmentOverlayColor ??
+                                    overlayColor: style.segmentOverlayColor ??
                                         WidgetStateProperty.resolveWith<Color?>(
                                             (states) {
                                           final base =

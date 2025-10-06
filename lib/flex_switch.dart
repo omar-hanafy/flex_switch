@@ -12,3 +12,4 @@
 library;
 
 export 'src/flex_switch.dart';
+export 'src/flex_switch_style.dart';

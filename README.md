@@ -144,6 +144,21 @@ const style = FlexSwitchStyle(
 );
 ```
 
+### Theme extensions
+
+Register `FlexSwitchTheme` in `ThemeData.extensions` to supply app-wide defaults without passing a `style`:
+
+```dart
+final theme = ThemeData(
+  colorSchemeSeed: Colors.teal,
+  extensions: const [
+    FlexSwitchTheme(backgroundColor: Color(0x11000000)),
+  ],
+);
+```
+
+Widget-level `style` overrides still take priority over the theme extension.
+
 ## Accessibility
 - Announces labels via Semantics; exposes selected state per segment
 - Full keyboard support: Left/Right (RTL-aware), Home, End, Enter/Space
