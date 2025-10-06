@@ -3,10 +3,9 @@
 import 'dart:math' as math;
 
 import 'package:equatable/equatable.dart';
+import 'package:flex_switch/src/flex_switch_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import 'flex_switch_style.dart';
 
 /// A single selectable option used by [FlexSwitch].
 ///
