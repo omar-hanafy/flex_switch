@@ -3,7 +3,7 @@
 import 'dart:math' as math;
 
 import 'package:equatable/equatable.dart';
-import 'package:flex_switch/src/flex_switch_style.dart';
+import 'package:flex_switch/flex_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -72,21 +72,6 @@ class SwitchOption<T> extends Equatable {
   List<Object?> get props => [value];
 }
 
-/// Layout models for [FlexSwitch].
-///
-/// Currently only [equal] is supported: all segments share equal width.
-enum FlexSwitchLayout {
-  /// All segments share equal width.
-  equal,
-
-  /// Each segment gets width proportional to its intrinsic content (icon + text),
-  /// scaled to fit the available space.
-  proportional,
-}
-
-/// Drag commit behavior: apply selection immediately while dragging, or only on release.
-enum DragCommitBehavior { immediate, onRelease }
-
 /// Universal, multi-option segmented control.
 ///
 /// Features
@@ -109,7 +94,7 @@ class FlexSwitch<T> extends StatefulWidget {
     this.height,
     this.disabled = false,
     this.hapticFeedback = true,
-    this.layout = FlexSwitchLayout.equal,
+    this.layout,
     this.allowDrag = true,
     this.dragCommitBehavior,
     this.thumbDragOnly = false,
@@ -136,7 +121,7 @@ class FlexSwitch<T> extends StatefulWidget {
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
-    FlexSwitchLayout layout = FlexSwitchLayout.equal,
+    FlexSwitchLayout? layout,
     bool allowDrag = true,
     DragCommitBehavior? dragCommitBehavior,
     bool thumbDragOnly = false,
@@ -177,7 +162,7 @@ class FlexSwitch<T> extends StatefulWidget {
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
-    FlexSwitchLayout layout = FlexSwitchLayout.equal,
+    FlexSwitchLayout? layout,
     bool allowDrag = true,
     DragCommitBehavior? dragCommitBehavior,
     bool thumbDragOnly = false,
@@ -223,7 +208,7 @@ class FlexSwitch<T> extends StatefulWidget {
     double? height,
     bool disabled = false,
     bool hapticFeedback = true,
-    FlexSwitchLayout layout = FlexSwitchLayout.equal,
+    FlexSwitchLayout? layout,
     bool allowDrag = true,
     DragCommitBehavior? dragCommitBehavior,
     bool thumbDragOnly = false,
@@ -274,15 +259,16 @@ class FlexSwitch<T> extends StatefulWidget {
   /// If true, taps/drags trigger a subtle haptic selection click.
   final bool hapticFeedback;
 
-  /// Layout model for segment sizing. Currently only [FlexSwitchLayout.equal].
-  final FlexSwitchLayout layout;
+  /// Layout model for segment sizing. Set to null to inherit from [FlexSwitchStyle].
+  final FlexSwitchLayout? layout;
 
   /// If true, horizontal drag over the control changes selection.
   final bool allowDrag;
 
   /// Whether selection should be committed immediately while dragging, or only on release.
-  /// If null, defaults to [DragCommitBehavior.onRelease] when [thumbDragOnly] is true,
-  /// otherwise [DragCommitBehavior.immediate].
+  /// If null, defers to [FlexSwitchStyle.dragCommitBehavior] when provided. Otherwise defaults
+  /// to [DragCommitBehavior.onRelease] when [thumbDragOnly] is true, or
+  /// [DragCommitBehavior.immediate] when drags can originate anywhere.
   final DragCommitBehavior? dragCommitBehavior;
 
   /// If true, drags are only accepted when they start on the currently selected
@@ -306,7 +292,6 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
   bool _focused = false;
 
   // Drag state
-  bool _dragging = false;
   int? _highlightedIndex; // Preview index when commit-on-release is active
   int? _lastDragIndex; // Last enabled index visited during drag
   Offset? _lastDragDownLocal; // Pointer down location before drag recognition
@@ -432,11 +417,13 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
     final theme = Theme.of(context);
     final height = widget.height ?? _computeDefaultHeight(theme);
     final style = FlexSwitchTheme.resolve(context, widget.style);
+    final layout = widget.layout ?? style.layout;
     final List<SwitchOption<T>> options = widget.options;
     final int optionCount = options.length;
     final int selectedIndex = _selectedIndex.clamp(0, optionCount - 1);
     final SwitchOption<T> selectedOption = options[selectedIndex];
     final DragCommitBehavior effectiveCommit = widget.dragCommitBehavior ??
+        style.dragCommitBehavior ??
         (widget.thumbDragOnly
             ? DragCommitBehavior.onRelease
             : DragCommitBehavior.immediate);
@@ -554,7 +541,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
               // Support proportional widths by measuring intrinsic content widths.
               final double equalSegmentWidth = segmentWidth;
               List<double> segmentWidths;
-              if (widget.layout == FlexSwitchLayout.equal) {
+              if (layout == FlexSwitchLayout.equal) {
                 segmentWidths = List<double>.filled(count, equalSegmentWidth);
               } else {
                 final List<double> intrinsic = <double>[];
@@ -885,20 +872,12 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                                       child: SizedBox.expand(
                                         child: Padding(
                                           padding: style.itemPadding,
-                                          child: TweenAnimationBuilder<double>(
+                                          child: AnimatedScale(
+                                            scale: selected
+                                                ? 1.0
+                                                : style.inactiveScale,
                                             duration: style.duration,
                                             curve: style.curve,
-                                            tween: Tween<double>(
-                                              begin: 1,
-                                              end: (selected || _dragging)
-                                                  ? 1.0
-                                                  : 0.96,
-                                            ),
-                                            builder: (context, scale, child) =>
-                                                Transform.scale(
-                                              scale: scale,
-                                              child: child,
-                                            ),
                                             child: AnimatedOpacity(
                                               duration: style.duration,
                                               curve: style.curve,
@@ -918,7 +897,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                           );
 
                           // Wrap per layout: equal -> Expanded, proportional -> SizedBox with width.
-                          return (widget.layout == FlexSwitchLayout.equal)
+                          return (layout == FlexSwitchLayout.equal)
                               ? Expanded(child: segmentCell)
                               : SizedBox(
                                   width: segmentWidths[i], child: segmentCell);
@@ -938,7 +917,7 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                     // Accept only if not thumb-only, or start over the selected segment.
                     final Offset originLocal = _lastDragDownLocal ?? local;
                     int indexFromLocal(Offset position) =>
-                        (widget.layout == FlexSwitchLayout.equal)
+                        (layout == FlexSwitchLayout.equal)
                             ? _indexFromDx(
                                 dx: position.dx,
                                 trackWidth: width,
@@ -964,7 +943,6 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                         _nearestEnabledIndex(pointerIndex);
                     _lastDragIndex = initialDragIndex;
                     setState(() {
-                      _dragging = true;
                       _thumbPressed = true;
                       if (previewOnDrag) {
                         _highlightedIndex = initialDragIndex;
@@ -984,7 +962,6 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                         ? (_highlightedIndex ?? _lastDragIndex)
                         : null;
                     setState(() {
-                      _dragging = false;
                       _thumbPressed = false;
                       if (previewOnDrag) {
                         _highlightedIndex = null;
@@ -1012,20 +989,19 @@ class _FlexSwitchState<T> extends State<FlexSwitch<T>> {
                       _lastDragDownLocal = null;
                       return;
                     }
-                    final int rawIndex =
-                        (widget.layout == FlexSwitchLayout.equal)
-                            ? _indexFromDx(
-                                dx: local.dx,
-                                trackWidth: width,
-                                segmentWidth: equalSegmentWidth,
-                                padding: padding,
-                              )
-                            : _indexFromDxVariable(
-                                dx: local.dx,
-                                trackWidth: width,
-                                padding: padding,
-                                segmentWidths: segmentWidthsLTR,
-                              );
+                    final int rawIndex = (layout == FlexSwitchLayout.equal)
+                        ? _indexFromDx(
+                            dx: local.dx,
+                            trackWidth: width,
+                            segmentWidth: equalSegmentWidth,
+                            padding: padding,
+                          )
+                        : _indexFromDxVariable(
+                            dx: local.dx,
+                            trackWidth: width,
+                            padding: padding,
+                            segmentWidths: segmentWidthsLTR,
+                          );
                     final index = _nearestEnabledIndex(rawIndex);
                     _lastDragIndex = index;
                     if (previewOnDrag) {

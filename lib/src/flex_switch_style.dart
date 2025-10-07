@@ -1,3 +1,4 @@
+import 'package:flex_switch/src/flex_switch_enums.dart';
 import 'package:flutter/material.dart';
 
 /// Visual style for FlexSwitch.
@@ -35,6 +36,9 @@ class FlexSwitchStyle {
     this.splashFactory,
     this.enableTrackHoverOverlay = true,
     this.segmentGutter = 6.0,
+    this.layout = FlexSwitchLayout.equal,
+    this.dragCommitBehavior,
+    this.inactiveScale = 1.0,
   });
 
   /// Background color of the outer track.
@@ -128,6 +132,17 @@ class FlexSwitchStyle {
   /// the outer track edges keep the full [padding] distance.
   final double segmentGutter;
 
+  /// Layout model used to size each segment.
+  final FlexSwitchLayout layout;
+
+  /// Drag commit policy (style-level default).
+  /// When provided, overrides the widget's `dragCommitBehavior` parameter.
+  final DragCommitBehavior? dragCommitBehavior;
+
+  /// Scale applied to non-selected segments.
+  /// Defaults to 1.0 to eliminate flicker when dragging.
+  final double inactiveScale;
+
   /// Returns a copy with the specified fields replaced.
   FlexSwitchStyle copyWith({
     Color? backgroundColor,
@@ -158,6 +173,9 @@ class FlexSwitchStyle {
     InteractiveInkFeatureFactory? splashFactory,
     bool? enableTrackHoverOverlay,
     double? segmentGutter,
+    FlexSwitchLayout? layout,
+    DragCommitBehavior? dragCommitBehavior,
+    double? inactiveScale,
   }) {
     return FlexSwitchStyle(
       backgroundColor: backgroundColor ?? this.backgroundColor,
@@ -190,6 +208,9 @@ class FlexSwitchStyle {
       enableTrackHoverOverlay:
           enableTrackHoverOverlay ?? this.enableTrackHoverOverlay,
       segmentGutter: segmentGutter ?? this.segmentGutter,
+      layout: layout ?? this.layout,
+      dragCommitBehavior: dragCommitBehavior ?? this.dragCommitBehavior,
+      inactiveScale: inactiveScale ?? this.inactiveScale,
     );
   }
 
@@ -225,11 +246,29 @@ class FlexSwitchStyle {
       splashFactory: other.splashFactory,
       enableTrackHoverOverlay: other.enableTrackHoverOverlay,
       segmentGutter: other.segmentGutter,
+      layout: other.layout,
+      dragCommitBehavior: other.dragCommitBehavior,
+      inactiveScale: other.inactiveScale,
     );
   }
 }
 
 /// Theme-aware defaults and overrides for FlexSwitch.
+///
+/// Extend your app's ThemeData with FlexSwitchTheme to set global defaults:
+///
+/// ```dart
+/// ThemeData(
+///   extensions: [
+///     FlexSwitchTheme(
+///       backgroundColor: Colors.grey[800],
+///       thumbColor: Colors.blue,
+///       borderRadius: 20.0,
+///       enableRipple: true,
+///     ),
+///   ],
+/// )
+/// ```
 @immutable
 class FlexSwitchTheme extends ThemeExtension<FlexSwitchTheme> {
   const FlexSwitchTheme({
@@ -237,20 +276,66 @@ class FlexSwitchTheme extends ThemeExtension<FlexSwitchTheme> {
     this.thumbColor,
     this.activeLabelColor,
     this.inactiveLabelColor,
-    this.dividerColor,
+    this.borderRadius,
+    this.thumbRadius,
+    this.thumbPressScale,
+    this.padding,
+    this.itemPadding,
+    this.gap,
+    this.shadow,
+    this.duration,
+    this.curve,
+    this.border,
     this.labelTextStyle,
+    this.iconSize,
+    this.showDividers,
+    this.dividerColor,
+    this.dividerThickness,
+    this.hideDividersAdjacentToThumb,
+    this.dividerFadeDuration,
+    this.dividerFadeCurve,
+    this.focusRingWidth,
+    this.enableRipple,
     this.segmentOverlayColor,
     this.splashFactory,
+    this.enableTrackHoverOverlay,
+    this.segmentGutter,
+    this.layout,
+    this.dragCommitBehavior,
+    this.inactiveScale,
   });
 
   final Color? backgroundColor;
   final Color? thumbColor;
   final Color? activeLabelColor;
   final Color? inactiveLabelColor;
-  final Color? dividerColor;
+  final double? borderRadius;
+  final double? thumbRadius;
+  final double? thumbPressScale;
+  final double? padding;
+  final EdgeInsets? itemPadding;
+  final double? gap;
+  final List<BoxShadow>? shadow;
+  final Duration? duration;
+  final Curve? curve;
+  final BoxBorder? border;
   final TextStyle? labelTextStyle;
+  final double? iconSize;
+  final bool? showDividers;
+  final Color? dividerColor;
+  final double? dividerThickness;
+  final bool? hideDividersAdjacentToThumb;
+  final Duration? dividerFadeDuration;
+  final Curve? dividerFadeCurve;
+  final double? focusRingWidth;
+  final bool? enableRipple;
   final WidgetStateProperty<Color?>? segmentOverlayColor;
   final InteractiveInkFeatureFactory? splashFactory;
+  final bool? enableTrackHoverOverlay;
+  final double? segmentGutter;
+  final FlexSwitchLayout? layout;
+  final DragCommitBehavior? dragCommitBehavior;
+  final double? inactiveScale;
 
   /// Base defaults that respond to the ambient [ThemeData].
   static FlexSwitchStyle defaults(ThemeData theme) {
@@ -270,10 +355,35 @@ class FlexSwitchTheme extends ThemeExtension<FlexSwitchTheme> {
       thumbColor: thumbColor ?? base.thumbColor,
       activeLabelColor: activeLabelColor ?? base.activeLabelColor,
       inactiveLabelColor: inactiveLabelColor ?? base.inactiveLabelColor,
+      borderRadius: borderRadius ?? base.borderRadius,
+      thumbRadius: thumbRadius ?? base.thumbRadius,
+      thumbPressScale: thumbPressScale ?? base.thumbPressScale,
+      padding: padding ?? base.padding,
+      itemPadding: itemPadding ?? base.itemPadding,
+      gap: gap ?? base.gap,
+      shadow: shadow ?? base.shadow,
+      duration: duration ?? base.duration,
+      curve: curve ?? base.curve,
+      border: border ?? base.border,
       labelTextStyle: labelTextStyle ?? base.labelTextStyle,
+      iconSize: iconSize ?? base.iconSize,
+      showDividers: showDividers ?? base.showDividers,
       dividerColor: dividerColor ?? base.dividerColor,
+      dividerThickness: dividerThickness ?? base.dividerThickness,
+      hideDividersAdjacentToThumb:
+          hideDividersAdjacentToThumb ?? base.hideDividersAdjacentToThumb,
+      dividerFadeDuration: dividerFadeDuration ?? base.dividerFadeDuration,
+      dividerFadeCurve: dividerFadeCurve ?? base.dividerFadeCurve,
+      focusRingWidth: focusRingWidth ?? base.focusRingWidth,
+      enableRipple: enableRipple ?? base.enableRipple,
       segmentOverlayColor: segmentOverlayColor ?? base.segmentOverlayColor,
       splashFactory: splashFactory ?? base.splashFactory,
+      enableTrackHoverOverlay:
+          enableTrackHoverOverlay ?? base.enableTrackHoverOverlay,
+      segmentGutter: segmentGutter ?? base.segmentGutter,
+      layout: layout ?? base.layout,
+      dragCommitBehavior: dragCommitBehavior ?? base.dragCommitBehavior,
+      inactiveScale: inactiveScale ?? base.inactiveScale,
     );
   }
 
@@ -301,20 +411,68 @@ class FlexSwitchTheme extends ThemeExtension<FlexSwitchTheme> {
     Color? thumbColor,
     Color? activeLabelColor,
     Color? inactiveLabelColor,
-    Color? dividerColor,
+    double? borderRadius,
+    double? thumbRadius,
+    double? thumbPressScale,
+    double? padding,
+    EdgeInsets? itemPadding,
+    double? gap,
+    List<BoxShadow>? shadow,
+    Duration? duration,
+    Curve? curve,
+    BoxBorder? border,
     TextStyle? labelTextStyle,
+    double? iconSize,
+    bool? showDividers,
+    Color? dividerColor,
+    double? dividerThickness,
+    bool? hideDividersAdjacentToThumb,
+    Duration? dividerFadeDuration,
+    Curve? dividerFadeCurve,
+    double? focusRingWidth,
+    bool? enableRipple,
     WidgetStateProperty<Color?>? segmentOverlayColor,
     InteractiveInkFeatureFactory? splashFactory,
+    bool? enableTrackHoverOverlay,
+    double? segmentGutter,
+    FlexSwitchLayout? layout,
+    DragCommitBehavior? dragCommitBehavior,
+    double? inactiveScale,
   }) {
     return FlexSwitchTheme(
       backgroundColor: backgroundColor ?? this.backgroundColor,
       thumbColor: thumbColor ?? this.thumbColor,
       activeLabelColor: activeLabelColor ?? this.activeLabelColor,
       inactiveLabelColor: inactiveLabelColor ?? this.inactiveLabelColor,
-      dividerColor: dividerColor ?? this.dividerColor,
+      borderRadius: borderRadius ?? this.borderRadius,
+      thumbRadius: thumbRadius ?? this.thumbRadius,
+      thumbPressScale: thumbPressScale ?? this.thumbPressScale,
+      padding: padding ?? this.padding,
+      itemPadding: itemPadding ?? this.itemPadding,
+      gap: gap ?? this.gap,
+      shadow: shadow ?? this.shadow,
+      duration: duration ?? this.duration,
+      curve: curve ?? this.curve,
+      border: border ?? this.border,
       labelTextStyle: labelTextStyle ?? this.labelTextStyle,
+      iconSize: iconSize ?? this.iconSize,
+      showDividers: showDividers ?? this.showDividers,
+      dividerColor: dividerColor ?? this.dividerColor,
+      dividerThickness: dividerThickness ?? this.dividerThickness,
+      hideDividersAdjacentToThumb:
+          hideDividersAdjacentToThumb ?? this.hideDividersAdjacentToThumb,
+      dividerFadeDuration: dividerFadeDuration ?? this.dividerFadeDuration,
+      dividerFadeCurve: dividerFadeCurve ?? this.dividerFadeCurve,
+      focusRingWidth: focusRingWidth ?? this.focusRingWidth,
+      enableRipple: enableRipple ?? this.enableRipple,
       segmentOverlayColor: segmentOverlayColor ?? this.segmentOverlayColor,
       splashFactory: splashFactory ?? this.splashFactory,
+      enableTrackHoverOverlay:
+          enableTrackHoverOverlay ?? this.enableTrackHoverOverlay,
+      segmentGutter: segmentGutter ?? this.segmentGutter,
+      layout: layout ?? this.layout,
+      dragCommitBehavior: dragCommitBehavior ?? this.dragCommitBehavior,
+      inactiveScale: inactiveScale ?? this.inactiveScale,
     );
   }
 
@@ -327,11 +485,39 @@ class FlexSwitchTheme extends ThemeExtension<FlexSwitchTheme> {
       activeLabelColor: Color.lerp(activeLabelColor, other.activeLabelColor, t),
       inactiveLabelColor:
           Color.lerp(inactiveLabelColor, other.inactiveLabelColor, t),
-      dividerColor: Color.lerp(dividerColor, other.dividerColor, t),
+      borderRadius: t < 0.5 ? borderRadius : other.borderRadius,
+      thumbRadius: t < 0.5 ? thumbRadius : other.thumbRadius,
+      thumbPressScale: t < 0.5 ? thumbPressScale : other.thumbPressScale,
+      padding: t < 0.5 ? padding : other.padding,
+      itemPadding: EdgeInsets.lerp(itemPadding, other.itemPadding, t),
+      gap: t < 0.5 ? gap : other.gap,
+      shadow: t < 0.5 ? shadow : other.shadow,
+      duration: t < 0.5 ? duration : other.duration,
+      curve: t < 0.5 ? curve : other.curve,
+      border: t < 0.5 ? border : other.border,
       labelTextStyle: TextStyle.lerp(labelTextStyle, other.labelTextStyle, t),
+      iconSize: t < 0.5 ? iconSize : other.iconSize,
+      showDividers: t < 0.5 ? showDividers : other.showDividers,
+      dividerColor: Color.lerp(dividerColor, other.dividerColor, t),
+      dividerThickness: t < 0.5 ? dividerThickness : other.dividerThickness,
+      hideDividersAdjacentToThumb: t < 0.5
+          ? hideDividersAdjacentToThumb
+          : other.hideDividersAdjacentToThumb,
+      dividerFadeDuration:
+          t < 0.5 ? dividerFadeDuration : other.dividerFadeDuration,
+      dividerFadeCurve: t < 0.5 ? dividerFadeCurve : other.dividerFadeCurve,
+      focusRingWidth: t < 0.5 ? focusRingWidth : other.focusRingWidth,
+      enableRipple: t < 0.5 ? enableRipple : other.enableRipple,
       segmentOverlayColor:
           t < 0.5 ? segmentOverlayColor : other.segmentOverlayColor,
       splashFactory: t < 0.5 ? splashFactory : other.splashFactory,
+      enableTrackHoverOverlay:
+          t < 0.5 ? enableTrackHoverOverlay : other.enableTrackHoverOverlay,
+      segmentGutter: t < 0.5 ? segmentGutter : other.segmentGutter,
+      layout: t < 0.5 ? layout : other.layout,
+      dragCommitBehavior:
+          t < 0.5 ? dragCommitBehavior : other.dragCommitBehavior,
+      inactiveScale: t < 0.5 ? inactiveScale : other.inactiveScale,
     );
   }
 }

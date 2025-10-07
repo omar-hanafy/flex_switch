@@ -10,7 +10,7 @@ Multi-option segmented control for Flutter. Keyboard accessible, RTL-aware, drag
 - Keyboard: Arrow/Home/End; focus ring; semantics
 - Drag-to-select across segments; full-width tap targets
 - RTL-aware layout and key handling
-- Highly themable via `FlexSwitchStyle`
+- Highly themable via `FlexSwitchStyle` and `FlexSwitchTheme`
 - Proportional widths option for content-sized segments
 - Drag commit options (immediate vs on-release) and thumb-drag-only
 - Disable individual options via `SwitchOption.enabled`
@@ -141,6 +141,7 @@ const style = FlexSwitchStyle(
   splashFactory: null,
   enableTrackHoverOverlay: true,
   segmentGutter: 6,        // interior gap; outer edges keep the track padding
+  layout: FlexSwitchLayout.equal, // default layout; can also come from FlexSwitchTheme
 );
 ```
 
@@ -152,7 +153,10 @@ Register `FlexSwitchTheme` in `ThemeData.extensions` to supply app-wide defaults
 final theme = ThemeData(
   colorSchemeSeed: Colors.teal,
   extensions: const [
-    FlexSwitchTheme(backgroundColor: Color(0x11000000)),
+    FlexSwitchTheme(
+      backgroundColor: Color(0x11000000),
+      layout: FlexSwitchLayout.proportional,
+    ),
   ],
 );
 ```
