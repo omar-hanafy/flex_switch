@@ -114,6 +114,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Install screenshot validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends webp
+
       - name: Install reviewed Pana
         run: dart pub global activate pana 0.23.19
 
