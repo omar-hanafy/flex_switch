@@ -7,9 +7,9 @@
 import 'dart:ui' as ui show SemanticsAction;
 
 import 'package:flex_switch/flex_switch.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 enum _Mode { day, night, system }
@@ -101,8 +101,11 @@ void main() {
   group('SwitchOption equality', () {
     test('Equality is based only on value', () {
       const a1 = SwitchOption<int>(value: 1, label: 'One');
-      const a2 =
-          SwitchOption<int>(value: 1, label: 'Different', enabled: false);
+      const a2 = SwitchOption<int>(
+        value: 1,
+        label: 'Different',
+        enabled: false,
+      );
       const b = SwitchOption<int>(value: 2, label: 'Two');
 
       expect(a1, equals(a2));
@@ -154,8 +157,9 @@ void main() {
       expect(changed, isTrue);
     });
 
-    testWidgets('FlexSwitch.fromEnum builds labels and taps change selection',
-        (tester) async {
+    testWidgets('FlexSwitch.fromEnum builds labels and taps change selection', (
+      tester,
+    ) async {
       _Mode? changed;
       await tester.pumpWidget(
         MaterialApp(
@@ -231,11 +235,7 @@ void main() {
         const SwitchOption<int>(value: 2, label: 'Two'),
       ];
       await tester.pumpWidget(
-        _Host<int>(
-          options: options,
-          initial: 0,
-          onChanged: (v) => changed = v,
-        ),
+        _Host<int>(options: options, initial: 0, onChanged: (v) => changed = v),
       );
       await tester.pumpAndSettle();
 
@@ -245,8 +245,9 @@ void main() {
       expect(changed, 2);
     });
 
-    testWidgets('Whole control disabled prevents changes and dims',
-        (tester) async {
+    testWidgets('Whole control disabled prevents changes and dims', (
+      tester,
+    ) async {
       int callCount = 0;
       final options = [
         const SwitchOption<int>(value: 0, label: 'Zero'),
@@ -274,46 +275,44 @@ void main() {
     });
 
     testWidgets(
-        'Disabled option cannot be tapped; drag selects nearest enabled',
-        (tester) async {
-      final changes = <int>[];
-      final options = [
-        const SwitchOption<int>(value: 0, label: 'Zero'),
-        const SwitchOption<int>(value: 1, label: 'One', enabled: false),
-        const SwitchOption<int>(value: 2, label: 'Two'),
-      ];
-      await tester.pumpWidget(
-        _Host<int>(
-          options: options,
-          initial: 0,
-          onChanged: changes.add,
-        ),
-      );
-      await tester.pumpAndSettle();
+      'Disabled option cannot be tapped; drag selects nearest enabled',
+      (tester) async {
+        final changes = <int>[];
+        final options = [
+          const SwitchOption<int>(value: 0, label: 'Zero'),
+          const SwitchOption<int>(value: 1, label: 'One', enabled: false),
+          const SwitchOption<int>(value: 2, label: 'Two'),
+        ];
+        await tester.pumpWidget(
+          _Host<int>(options: options, initial: 0, onChanged: changes.add),
+        );
+        await tester.pumpAndSettle();
 
-      // Tap the disabled middle option; no change expected.
-      await tester.tap(find.text('One'));
-      await tester.pumpAndSettle();
-      expect(changes, isEmpty);
+        // Tap the disabled middle option; no change expected.
+        await tester.tap(find.text('One'));
+        await tester.pumpAndSettle();
+        expect(changes, isEmpty);
 
-      // Drag over the disabled segment; nearest enabled is index 2 ("Two").
-      final centerOfDisabled = tester.getCenter(find.text('One'));
+        // Drag over the disabled segment; nearest enabled is index 2 ("Two").
+        final centerOfDisabled = tester.getCenter(find.text('One'));
 
-      final gesture = await tester.startGesture(centerOfDisabled);
-      await tester.pump(const Duration(milliseconds: 30));
-      await gesture.moveBy(const Offset(40, 0)); // slight horizontal drag
-      await tester.pump(const Duration(milliseconds: 30));
-      await gesture.up();
-      await tester.pumpAndSettle();
+        final gesture = await tester.startGesture(centerOfDisabled);
+        await tester.pump(const Duration(milliseconds: 30));
+        await gesture.moveBy(const Offset(40, 0)); // slight horizontal drag
+        await tester.pump(const Duration(milliseconds: 30));
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      expect(changes.isNotEmpty, isTrue);
-      expect(changes.last, 2);
-    });
+        expect(changes.isNotEmpty, isTrue);
+        expect(changes.last, 2);
+      },
+    );
   });
 
   group('Drag interactions', () {
-    testWidgets('Immediate commit: selection updates while dragging',
-        (tester) async {
+    testWidgets('Immediate commit: selection updates while dragging', (
+      tester,
+    ) async {
       final changes = <int>[];
       final options = [
         const SwitchOption<int>(value: 0, label: 'A'),
@@ -350,8 +349,9 @@ void main() {
       expect(changes.last, 2);
     });
 
-    testWidgets('Commit on release: no change until finger lifts',
-        (tester) async {
+    testWidgets('Commit on release: no change until finger lifts', (
+      tester,
+    ) async {
       final changes = <int>[];
       final options = [
         const SwitchOption<int>(value: 0, label: 'A'),
@@ -389,8 +389,9 @@ void main() {
       expect(changes, equals([2]));
     });
 
-    testWidgets('thumbDragOnly: drags must start on selected segment',
-        (tester) async {
+    testWidgets('thumbDragOnly: drags must start on selected segment', (
+      tester,
+    ) async {
       final changes = <int>[];
       final options = [
         const SwitchOption<int>(value: 0, label: 'Left'),
@@ -430,8 +431,9 @@ void main() {
       expect(changes, equals([1]));
     });
 
-    testWidgets('allowDrag=false ignores drags but taps still work',
-        (tester) async {
+    testWidgets('allowDrag=false ignores drags but taps still work', (
+      tester,
+    ) async {
       int? changed;
       final options = [
         const SwitchOption<int>(value: 0, label: 'A'),
@@ -466,8 +468,9 @@ void main() {
       expect(changed, 1, reason: 'taps remain functional');
     });
 
-    testWidgets('Commit-on-release cancels when pointer leaves vertical slop',
-        (tester) async {
+    testWidgets('Commit-on-release cancels when pointer leaves vertical slop', (
+      tester,
+    ) async {
       final changes = <int>[];
       final options = [
         const SwitchOption<int>(value: 0, label: 'A'),
@@ -502,14 +505,18 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      expect(changes, isEmpty,
-          reason: 'drag should cancel when exiting vertically');
+      expect(
+        changes,
+        isEmpty,
+        reason: 'drag should cancel when exiting vertically',
+      );
     });
   });
 
   group('Dividers', () {
-    testWidgets('Dividers render and fade adjacent to selected thumb',
-        (tester) async {
+    testWidgets('Dividers render and fade adjacent to selected thumb', (
+      tester,
+    ) async {
       final options = [
         const SwitchOption<int>(value: 0, label: 'A'),
         const SwitchOption<int>(value: 1, label: 'B'),
@@ -637,8 +644,9 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('LTR: arrow, home/end, and activation keys update selection',
-        (tester) async {
+    testWidgets('LTR: arrow, home/end, and activation keys update selection', (
+      tester,
+    ) async {
       final changes = <int>[];
       final options = [
         const SwitchOption<int>(value: 0, label: 'One'),
@@ -647,11 +655,7 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        _Host<int>(
-          options: options,
-          initial: 1,
-          onChanged: changes.add,
-        ),
+        _Host<int>(options: options, initial: 1, onChanged: changes.add),
       );
       await tester.pumpAndSettle();
 
@@ -672,8 +676,11 @@ void main() {
       final beforeClamp = changes.length;
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
       await tester.pump();
-      expect(changes.length, beforeClamp,
-          reason: 'clamped at first index in LTR');
+      expect(
+        changes.length,
+        beforeClamp,
+        reason: 'clamped at first index in LTR',
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.end);
       await tester.pump();
@@ -685,13 +692,19 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pump();
-      expect(changes.last, 1,
-          reason: 'Space triggers ActivateIntent cycling to next');
+      expect(
+        changes.last,
+        1,
+        reason: 'Space triggers ActivateIntent cycling to next',
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
-      expect(changes.last, 2,
-          reason: 'Enter triggers ActivateIntent and cycles again');
+      expect(
+        changes.last,
+        2,
+        reason: 'Enter triggers ActivateIntent and cycles again',
+      );
     });
 
     testWidgets('RTL: arrow keys reverse direction', (tester) async {
@@ -716,54 +729,64 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
       await tester.pump();
-      expect(changes.last, 2,
-          reason: 'In RTL, ArrowLeft moves to higher logical index');
+      expect(
+        changes.last,
+        2,
+        reason: 'In RTL, ArrowLeft moves to higher logical index',
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
-      expect(changes.last, 1,
-          reason: 'ArrowRight should move back toward lower index in RTL');
+      expect(
+        changes.last,
+        1,
+        reason: 'ArrowRight should move back toward lower index in RTL',
+      );
     });
   });
 
   group('Layout & hit-testing', () {
     testWidgets(
-        'Proportional layout: long second segment gets most width (hit @25% selects #2)',
-        (tester) async {
-      // Make the second label dramatically longer than the first.
-      final options = [
-        const SwitchOption<int>(value: 0, label: 'A'),
-        const SwitchOption<int>(
-            value: 1, label: 'This is a very very very long label'),
-      ];
+      'Proportional layout: long second segment gets most width (hit @25% selects #2)',
+      (tester) async {
+        // Make the second label dramatically longer than the first.
+        final options = [
+          const SwitchOption<int>(value: 0, label: 'A'),
+          const SwitchOption<int>(
+            value: 1,
+            label: 'This is a very very very long label',
+          ),
+        ];
 
-      int? changed;
-      await tester.pumpWidget(
-        _Host<int>(
-          options: options,
-          initial: 0,
-          layout: FlexSwitchLayout.proportional,
-          onChanged: (v) => changed = v,
-          width: 300, // default in widget is ~300; we make it explicit
-        ),
-      );
-      await tester.pumpAndSettle();
+        int? changed;
+        await tester.pumpWidget(
+          _Host<int>(
+            options: options,
+            initial: 0,
+            layout: FlexSwitchLayout.proportional,
+            onChanged: (v) => changed = v,
+            width: 300, // default in widget is ~300; we make it explicit
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // With proportional layout, the first segment should be quite small.
-      // A tap/drag around 25% of the width should land in the (wider) second segment.
-      final switchFinder = find.byType(FlexSwitch<int>);
-      final topLeft = tester.getTopLeft(switchFinder);
-      final size = tester.getSize(switchFinder);
+        // With proportional layout, the first segment should be quite small.
+        // A tap/drag around 25% of the width should land in the (wider) second segment.
+        final switchFinder = find.byType(FlexSwitch<int>);
+        final topLeft = tester.getTopLeft(switchFinder);
+        final size = tester.getSize(switchFinder);
 
-      final point = topLeft + Offset(size.width * 0.25, size.height * 0.5);
-      await tester.tapAt(point);
-      await tester.pumpAndSettle();
+        final point = topLeft + Offset(size.width * 0.25, size.height * 0.5);
+        await tester.tapAt(point);
+        await tester.pumpAndSettle();
 
-      expect(changed, 1);
-    });
+        expect(changed, 1);
+      },
+    );
 
-    testWidgets('RTL: leftmost physical area maps to last logical index',
-        (tester) async {
+    testWidgets('RTL: leftmost physical area maps to last logical index', (
+      tester,
+    ) async {
       final options = [
         const SwitchOption<int>(value: 0, label: 'First'),
         const SwitchOption<int>(value: 1, label: 'Second'),
@@ -796,8 +819,9 @@ void main() {
       expect(changed, 2);
     });
 
-    testWidgets('Default height respects kMinInteractiveDimension',
-        (tester) async {
+    testWidgets('Default height respects kMinInteractiveDimension', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _Host<int>(
           options: const [
